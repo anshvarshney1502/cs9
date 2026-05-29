@@ -19,11 +19,12 @@ Scoring rules: [`spark.service.js`](src/services/spark.service.js).
 
 ## 1. Spark Points (`type=spark`)
 
-**What it is:** the platform's engagement *currency*. A running balance stored on
-`User.spark_points`, incremented every time `awardSpark()` runs.
+**What it is:** the platform's engagement *currency*. The source of truth is the
+append-only `spark_transactions` ledger. `User.spark_points` is a cached balance maintained
+by `spark.service.js` and the reconciliation script.
 
 **It rewards participation of every kind** — showing up, asking, answering, and being
-useful. Source of truth: `SPARK_POINTS` in `spark.service.js`.
+useful. Award values are defined in `SPARK_POINTS` in `spark.service.js`.
 
 | Action | Points |
 |--------|--------|
@@ -37,7 +38,12 @@ useful. Source of truth: `SPARK_POINTS` in `spark.service.js`.
 | `QUESTION_BOUNTY` | −(bounty) when a bounty is reserved |
 | `BOUNTY_AWARDED` | +(bounty) to the answer author when accepted |
 
-**Query:** `User.find().sort({ spark_points: -1 })`. Always accurate (maintained live).
+**Query:** `User.find().sort({ spark_points: -1 })`. If drift is suspected, run the
+dry-run reconciliation first:
+
+```sh
+node src/scripts/migrations/005-reconcile-spark-points.js --dry-run
+```
 
 ---
 
@@ -108,5 +114,5 @@ reputation = (accepted answers × 15) + (total answer upvotes × 10)
 | Earned from logging in? | Yes (+1/day) | No |
 | Earned from asking? | Yes (+2) | No |
 | Earned from being upvoted/accepted? | Yes | Yes (only these) |
-| Stored on | `User.spark_points` | `UserProfile.reputation` |
+| Stored on | `User.spark_points` cache backed by `spark_transactions` | `UserProfile.reputation` |
 | Spendable (bounties)? | Yes | No |

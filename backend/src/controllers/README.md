@@ -179,5 +179,5 @@ Each file handles a logical group of routes. All controllers receive Express `re
 | Middleware | Purpose |
 |-----------|---------|
 | `verifyToken` | Extracts JWT from cookie, attaches `req.user` |
-| `checkRole(role)` | Returns 403 if `req.user.role !== role` |
+| `checkRole(role)` | Returns 403 unless one of `req.user.roles` matches |
 | `error.middleware.js` | Global error handler → consistent JSON error responses |

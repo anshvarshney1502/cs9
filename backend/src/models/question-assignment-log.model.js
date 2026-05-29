@@ -1,6 +1,14 @@
+import { randomUUID } from 'node:crypto'
 import mongoose from 'mongoose'
 
 const questionAssignmentLogSchema = new mongoose.Schema({
+  assignment_log_id: {
+    type: String,
+    default: randomUUID,
+    immutable: true,
+    unique: true,
+    index: true,
+  },
   question_id: {
     type: String,
     required: true,

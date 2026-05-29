@@ -10,8 +10,9 @@ Current MongoDB Atlas cluster design. This is the **source-of-truth** ERD (the
   *logical*, via UUID string fields, resolved in application code.
 - `votes` and `flags` are **polymorphic**: `target_type` + `target_id` point at a
   question, answer, or comment (dashed lines below).
-- Several counters are **denormalized** (e.g. `questions.answer_count`,
-  `answers.comment_count`) and maintained by controllers.
+- Some fields are **service-maintained caches** for list/read performance. Their
+  source of truth is documented below and each cache has a dry-run rebuild or
+  reconciliation script.
 
 ```mermaid
 erDiagram
@@ -46,18 +47,12 @@ erDiagram
 
     USER {
         string user_id PK
-        string name
+        string name "signup/auth fallback; public display prefers USER_PROFILE.display_name"
         string email UK
         string passwordHash "select:false"
-        string role "USER|RESOLVER|ADMIN"
         string status "active|disabled|suspended"
-        boolean is_expert
-        boolean is_verified_expert
-        string expert_type
-        string specialty
-        number spark_points "engagement currency"
+        number spark_points "cache: sum(SPARK_TRANSACTION.points)"
         date   last_login_at
-        string avatar_url
         date   created_at
         date   updated_at
     }
@@ -72,9 +67,6 @@ erDiagram
         map    social_links
         number reputation "trust score"
         string phone
-        object kyc "id_type,id_number,verified,verified_at"
-        object course "name,enrolled_on,refund_eligible"
-        object files
         string credentials_url
         array  expertise
         array  categories
@@ -111,12 +103,11 @@ erDiagram
         string visibility "public|hidden|deleted"
         boolean is_pinned
         boolean is_locked
-        number upvotes
-        array  upvoted_by "user_ids"
+        number upvotes "cache from VOTE"
         string assigned_to FK "resolver user_id"
         number view_count
-        number answer_count "denorm"
-        boolean has_expert_answer
+        number answer_count "cache from ANSWER"
+        boolean has_expert_answer "cache from ANSWER"
         date   last_activity_at
         string linked_faq_id FK "self → QUESTION"
         string moderation_status "approved|pending|rejected"
@@ -140,12 +131,11 @@ erDiagram
         boolean is_official
         boolean is_deleted
         string visibility
-        number upvotes
-        array  upvoted_by
-        number downvotes
-        number score "upvotes-downvotes (denorm)"
-        number comment_count "denorm"
-        number top_level_comment_count
+        number upvotes "cache from VOTE"
+        number downvotes "cache from VOTE"
+        number score "cache: upvotes-downvotes"
+        number comment_count "cache from COMMENT"
+        number top_level_comment_count "cache from COMMENT"
         object spark_award "{amount,awarded_at,transaction_id}"
         string moderation_status "approved|pending|rejected"
         array  edit_history
@@ -164,11 +154,10 @@ erDiagram
         string author_role
         string body
         array  mentions "user_ids"
-        number upvotes
-        array  upvoted_by
-        number downvotes
-        number score
-        number reply_count
+        number upvotes "cache from VOTE"
+        number downvotes "cache from VOTE"
+        number score "cache: upvotes-downvotes"
+        number reply_count "cache from COMMENT parent_id"
         number flag_count
         boolean is_deleted
         string visibility
@@ -229,6 +218,7 @@ erDiagram
     }
 
     QUESTION_ASSIGNMENT_LOG {
+        string assignment_log_id PK
         string question_id FK
         string resolver_id FK "user_id"
         string assigned_by "SYSTEM or admin user_id"
@@ -243,7 +233,7 @@ erDiagram
 | Relationship | Mechanism |
 |---|---|
 | User ↔ UserProfile | 1:1 via `user_profiles.user_id` (unique) |
-| User ↔ Role | many-to-many through `user_role_mappers` (`user.role` is a denormalized *primary* role cache) |
+| User ↔ Role | many-to-many through `user_role_mappers`; API `role` is a derived primary role (`ADMIN > RESOLVER > USER`) |
 | Question → Answer → Comment | one-to-many chains; `comments.question_id` is denormalized for single-query moderation |
 | Comment self-reference | `parent_id` → parent comment, depth capped at 1 (one level of replies) |
 | Question self-reference | `linked_faq_id` → an FAQ a community question was promoted to / duplicates |
@@ -252,6 +242,19 @@ erDiagram
 
 ## Scoring fields (see `LEADERBOARD.md`)
 
-- `users.spark_points` — engagement currency (login, ask, answer, upvote, accept, bounty).
-- `user_profiles.reputation` — trust signal (answer upvotes, accepted answers, expert verification).
 - `spark_transactions` — append-only ledger of every spark change.
+- `users.spark_points` — cache of `sum(spark_transactions.points)` for the user.
+- `user_profiles.reputation` — trust signal (answer upvotes, accepted answers, expert verification).
+
+## Cache ownership
+
+| Cache field | Source of truth | Owner / rebuild |
+|---|---|---|
+| `users.spark_points` | `spark_transactions.points` | `spark.service.js`; `migrations/005-reconcile-spark-points.js` |
+| `questions.upvotes` | `votes` where `target_type=question` | vote controller/service; `rebuild-vote-counters.js` |
+| `answers.upvotes/downvotes/score` | `votes` where `target_type=answer` | vote controller/service; `rebuild-vote-counters.js` |
+| `comments.upvotes/downvotes/score` | `votes` where `target_type=comment` | vote controller/service; `rebuild-vote-counters.js` |
+| `questions.answer_count` | visible `answers.question_id` count | answer lifecycle/moderation; `rebuild-question-counters.js` |
+| `questions.has_expert_answer` | visible resolver/admin/expert answers | answer lifecycle/moderation; `rebuild-question-counters.js` |
+| `answers.comment_count/top_level_comment_count` | visible `comments.answer_id` count | comment lifecycle/moderation; `rebuild-comment-counters.js` |
+| `comments.reply_count` | visible `comments.parent_id` count | comment lifecycle/moderation; `rebuild-comment-counters.js` |

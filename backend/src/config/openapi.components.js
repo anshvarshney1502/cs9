@@ -70,7 +70,11 @@ export default {
         userId: { type: 'string', format: 'uuid' },
         name: { type: 'string' },
         email: { type: 'string', format: 'email' },
-        role: { type: 'string', enum: ['USER', 'RESOLVER', 'ADMIN'] },
+        role: {
+          type: 'string',
+          enum: ['USER', 'RESOLVER', 'ADMIN'],
+          description: 'Derived primary role from roles + user_role_mappers; not stored on users.',
+        },
         roles: {
           type: 'array',
           items: { type: 'string', enum: ['USER', 'RESOLVER', 'ADMIN'] },
@@ -85,7 +89,6 @@ export default {
         name: { type: 'string', maxLength: 100 },
         email: { type: 'string', format: 'email' },
         password: { type: 'string', format: 'password', minLength: 8, writeOnly: true },
-        role: { type: 'string', enum: ['USER'], default: 'USER' },
       },
     },
     SignupResponse: {
@@ -141,7 +144,6 @@ export default {
       properties: {
         title: { type: 'string', minLength: 10 },
         body: { type: 'string' },
-        category: { type: 'string' },
         tags: { type: 'array', items: { type: 'string' } },
         sparkBounty: { type: 'integer', minimum: 0 },
       },
@@ -151,7 +153,6 @@ export default {
       properties: {
         title: { type: 'string' },
         body: { type: 'string' },
-        category: { type: 'string' },
         tags: { type: 'array', items: { type: 'string' } },
       },
     },
