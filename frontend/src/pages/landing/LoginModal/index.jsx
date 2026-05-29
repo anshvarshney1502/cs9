@@ -44,17 +44,17 @@ function LoginModal({ isOpen, onClose, onLogin }) {
   }
 
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} title={isForgotPassword ? 'Reset Password' : 'Login'}>
+    <Modal isOpen={isOpen} onClose={handleClose} position="top-right" title={isForgotPassword ? 'Reset Password' : 'Login'}>
       {isForgotPassword ? (
         <>
-          <h2 className="mb-2 text-center font-display text-[18px] font-bold leading-tight text-black">
+          <h2 className="mb-2 font-display text-center text-[15px] font-semibold leading-snug text-black">
             Reset Password
           </h2>
-          <p className="mx-auto mb-4 max-w-sm text-center text-[12px] leading-5 text-[#6b7280]">
+          <p className="mx-auto mb-4 max-w-sm text-center text-[13px] leading-6 text-[#444748]">
             Enter your user ID or email address and we will send password reset instructions.
           </p>
 
-          <form className="flex flex-col gap-2" onSubmit={handleResetPassword}>
+          <form className="flex flex-col gap-3" onSubmit={handleResetPassword}>
             <label className="sr-only" htmlFor="reset-user-id">User ID</label>
             <Input
               autoComplete="username"
@@ -64,17 +64,16 @@ function LoginModal({ isOpen, onClose, onLogin }) {
               required
               type="email"
               value={userId}
-              className="h-9 text-[13px]"
             />
 
-            <Button type="submit" variant="primary" className="mt-1 w-full h-9 text-[12px]">
+            <Button type="submit" variant="primary" className="w-full">
               Send Reset Link
             </Button>
 
             <Button
               type="button"
               variant="ghost"
-              className="w-full justify-center text-[12px]"
+              className="w-full justify-center"
               onClick={() => {
                 setError('')
                 setIsForgotPassword(false)
@@ -86,17 +85,13 @@ function LoginModal({ isOpen, onClose, onLogin }) {
         </>
       ) : (
         <>
-          <h2 className="mb-3 text-center font-display text-[18px] font-bold leading-tight text-black">
-            Login
-          </h2>
-
           {error && (
-            <p className="mb-2 rounded-lg border border-[#f3c6c6] bg-[#fff5f5] px-3 py-2 text-center text-[12px] leading-5 text-[#ba1a1a]">
+            <p className="mb-3 rounded-lg border border-[#f3c6c6] bg-[#fff5f5] px-3 py-2 text-center text-[13px] leading-6 text-[#ba1a1a]">
               {error}
             </p>
           )}
 
-          <form className="flex flex-col gap-2" onSubmit={handleLogin}>
+          <form className="flex flex-col gap-3" onSubmit={handleLogin}>
             <label className="sr-only" htmlFor="login-user-id">User ID</label>
             <Input
               autoComplete="username"
@@ -106,7 +101,6 @@ function LoginModal({ isOpen, onClose, onLogin }) {
               required
               type="email"
               value={userId}
-              className="h-9 text-[13px]"
             />
 
             <label className="sr-only" htmlFor="login-password">Password</label>
@@ -118,13 +112,12 @@ function LoginModal({ isOpen, onClose, onLogin }) {
               required
               type="password"
               value={password}
-              className="h-9 text-[13px]"
             />
 
             <Button
               type="button"
               variant="ghost"
-              className="self-end text-[12px]"
+              className="self-end text-[13px]"
               onClick={() => {
                 setError('')
                 setIsForgotPassword(true)
@@ -136,7 +129,7 @@ function LoginModal({ isOpen, onClose, onLogin }) {
             <Button
               type="submit"
               variant="primary"
-              className="w-full h-9 text-[12px] disabled:cursor-not-allowed disabled:opacity-60"
+              className="w-full disabled:cursor-not-allowed disabled:opacity-60"
               disabled={isSubmitting}
             >
               {isSubmitting ? 'Logging in...' : 'Login'}

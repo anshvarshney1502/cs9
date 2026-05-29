@@ -38,8 +38,10 @@ function ProfileSettingsPage() {
 
     setSaving(true)
     try {
-      const profile = await updateProfile({ displayName: name.trim() })
-      if (user) setUser({ ...user, name: profile.displayName })
+      await updateProfile({ displayName: name.trim() })
+      const fresh = await fetchProfile()
+      const current = useAuthStore.getState().user
+      setUser({ ...current, name: fresh.displayName || current?.name || name })
 
       if (wantsPasswordChange) {
         await changePassword(currentPassword, newPassword)

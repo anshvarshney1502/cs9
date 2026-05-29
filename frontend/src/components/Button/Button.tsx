@@ -25,7 +25,7 @@ function Button({
     secondary:
       'min-h-9 rounded-lg border border-[#c4c7c7] bg-white px-5 text-[13px] text-[#444748] hover:border-black hover:text-black focus:ring-offset-[#f8f9fa]',
     ghost:
-      'text-[12px] text-[#6b7280] hover:text-black focus:ring-offset-transparent',
+      'text-[13px] text-[#6b7280] hover:text-black focus:ring-offset-transparent',
   }
 
   return (

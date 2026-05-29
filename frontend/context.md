@@ -1,79 +1,102 @@
-# Frontend Context
-
-This frontend should follow a Vite + React structure like the reference tree shared by the user. Treat this file as the local convention note for future frontend work.
-
-## Target Shape
-
-```text
-frontend/
-├── .cursor/rules/
-├── .github/
-├── .husky/
-├── public/
-│   ├── carousel/
-│   └── static images and icons
-├── src/
-│   ├── api/
-│   ├── assets/
-│   ├── cachingClient/
-│   ├── components/
-│   ├── context/
-│   ├── pages/
-│   ├── routes.jsx
-│   ├── services/
-│   └── utils/
-├── tests/
-├── index.html
-├── package.json
-├── tailwind.config.js
-├── tsconfig.json
-└── vite.config.js
-```
-
-## Source Organization
-
-- Keep shared API clients in `src/api/`, for example `axios.ts`.
-- Keep reusable UI in `src/components/`.
-- Keep app-wide providers and state containers in `src/context/`.
-- Keep page-level features in `src/pages/`, grouped by domain or route.
-- Keep cross-page service modules in `src/services/`.
-- Keep generic formatting and data helpers in `src/utils/`.
-- Keep static imported images in `src/assets/`; keep directly served public files in `public/`.
+# Frontend Conventions
 
 ## Component Pattern
 
-Reusable components should use a folder per component:
+Reusable components live in `src/components/` with a folder per component:
 
-```text
+```
 src/components/Button/
-├── Button.tsx
-└── README.md
+├── Button.tsx          # Implementation
+└── README.md           # Usage notes (for complex/shared components)
 ```
 
-Use the component file for implementation (e.g. `Button.tsx`, `Footer.tsx`) and `README.md` for usage notes when the component is shared or non-trivial. Do NOT use `index.tsx` barrel exports for single-component folders — they add indirection with no benefit.
+Use direct file imports. **Do NOT** use `index.tsx` barrel exports for single-component folders — they add indirection with no benefit.
 
 ## Feature/Page Pattern
 
-Feature pages should be organized by capability:
+Feature pages live in `src/pages/<section>/pages/<PageName>/index.jsx`. Keep co-located logic inside the feature folder; promote to shared `components/`, `service.js`, or `constants.js` only when genuinely reused.
 
-```text
-src/pages/Home/ForecastBuilding/
-├── components/
-├── constants/
-├── hooks/
-├── services/
-├── utils/
-└── index.jsx
+## State Ownership
+
+| State type | Where |
+|------------|-------|
+| Auth (user, token) | `useAuthStore` (Zustand, persisted) |
+| UI (modals, active tab, selected item) | Component `useState` |
+| Server data (questions, notifications) | `useState` + service calls in `useEffect` |
+
+## Service Layer
+
+- **Shared services** — `pages/user/service.js` (fetchQuestions, voteQuestion, fetchNotifications, etc.)
+- **Page-specific services** — co-located with the page (e.g. `pages/landing/service.jsx`)
+- Keep network calls out of components; place them in service files.
+
+## Routing
+
+Routes defined in `routes/index.jsx`. Use `ProtectedRoute` for auth-gated pages. SPA navigation within the user section — **no URL changes** when switching tabs or viewing question details inline.
+
+## Styling
+
+- **Tailwind CSS v4** — utility-first, no UI kit
+- **Brand color** — `#8c6a40` (brown); use throughout for accents, active states, buttons
+- **Fonts** — `font-display` for headings, standard sans for body
+- **Text sizes** — match landing page convention: `text-[13px]` body, `text-[15px]` headings, `text-[11px]` labels/caps
+- **No raw HTML** — use `dangerouslySetInnerHTML` only for trusted content (FAQ answers from DB)
+
+## Imports — Path Depth
+
+Files in `pages/user/pages/<PageName>/` need **4 levels up** to reach `src/`:
+```
+pages/user/pages/Dashboard/index.jsx
+→ ../../../../components/   ✓
 ```
 
-Keep feature-specific forms, tables, modals, hooks, constants, and services inside that feature folder. Promote code to `src/components/`, `src/services/`, or `src/utils/` only when it is reused across multiple features.
+Files in `pages/user/components/<ComponentName>/` also need **4 levels up**:
+```
+pages/user/components/QuestionCard/QuestionCard.jsx
+→ ../../../../components/   ✓
+```
 
-## Conventions
+Files in `pages/user/layout.jsx` need **3 levels up**:
+```
+pages/user/layout.jsx
+→ ../../../components/       ✓
+```
 
-- Prefer feature-based organization over broad type-only folders for page logic.
-- Use direct file imports for single-component folders. Keep barrel exports for folders with multiple named exports only.
-- Keep network calls and persistence logic out of React components; place them in `services/`.
-- Keep route definitions centralized in `src/routes.jsx`.
-- Mixed `.jsx`, `.tsx`, `.js`, and `.ts` files are acceptable, matching the reference structure.
-- Use Tailwind CSS for styling unless an existing local component style requires a different pattern.
-- Add focused tests under `tests/` for important workflows and reusable logic.
+## Component Communication
+
+- **Props** — parent → child data flow
+- **Context (Outlet context)** — layout → nested pages via React Router's `useOutletContext`
+- **Callbacks** — child → parent events via prop functions
+
+## Global Components (src/components/)
+
+| Component | Purpose | Key Props |
+|-----------|---------|-----------|
+| `Button` | All buttons | `variant` (`primary`\|`secondary`\|`ghost`), `onClick`, `className` |
+| `Input` | Text inputs | `type`, `value`, `onChange`, `placeholder`, `className` |
+| `Modal` | Dialog overlay | `isOpen`, `onClose`, `position` (`center`\|`top-right`), `title` |
+| `Select` | Dropdown select | `options`, `value`, `onChange`, `placeholder` |
+| `Footer` | Site-wide footer | — |
+
+## Notifications / Toasts
+
+Use `notifyError()` / `notifySuccess()` from `lib/notify.js` for inline feedback. Avoid `window.alert`.
+
+## Icons
+
+From **lucide-react**. Keep `strokeWidth={1.8}` for consistent weight. Common icons used:
+
+| Icon | Usage |
+|------|-------|
+| `ChevronUp` | Upvote |
+| `MessageCircle` | Comment count |
+| `Reply` | Reply / View action |
+| `Flag` | Report |
+| `Search` | Search modal |
+| `Bell` / `BellRing` | Notifications |
+| `Sun` / `Moon` | Dark mode toggle |
+| `PanelLeft` / `PanelLeftClose` | Sidebar collapse |
+| `TrendingUp` | FAQ categories |
+| `LinkIcon` | Contributions |
+| `CheckCircle` / `Clock` | Status indicators |
+| `LogOut` / `Settings` | User menu |

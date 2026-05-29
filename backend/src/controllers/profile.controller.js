@@ -57,6 +57,11 @@ export async function updateMyProfile(req, res, next) {
       await req.authUser.save()
     }
 
+    if (req.body.displayName !== undefined) {
+      req.authUser.name = req.body.displayName
+      await req.authUser.save()
+    }
+
     res.json({ success: true, profile: toProfile(req.authUser, profile) })
   } catch (error) {
     next(error)

@@ -1,10 +1,12 @@
-import { ChevronUp, MessageCircle, Reply, CheckCircle, Clock } from 'lucide-react'
+import { ChevronUp, MessageCircle, Reply, CheckCircle, Clock, Flag } from 'lucide-react'
 import { STATUS_CONFIG } from '../../constants'
+import { notifyError } from '../../../../lib/notify'
 
 function QuestionCard({ query, onUpvote, onClick }) {
   const { color: statusColor } = STATUS_CONFIG[query.status] ?? STATUS_CONFIG.Active
   const StatusIcon = query.status === 'Active' ? CheckCircle
     : query.status === 'In Progress' ? Clock : CheckCircle
+  const isResolved = query.status === 'Resolved'
 
   return (
     <div className="mb-4 flex rounded-xl border border-[#9ca3af] bg-white p-5">
@@ -39,7 +41,9 @@ function QuestionCard({ query, onUpvote, onClick }) {
               </span>
             ))}
           </div>
-          <span className="shrink-0 text-[12px] font-medium text-[#6b7280]">{query.meta}</span>
+          <span className="shrink-0 text-[12px] font-medium text-[#6b7280]">
+            <span className="text-[#191c1d]">{query.authorName}</span> · {query.meta}
+          </span>
         </div>
 
         <h3 className="font-display mb-2 text-[18px] font-semibold text-[#191c1d]">{query.title}</h3>
@@ -52,14 +56,24 @@ function QuestionCard({ query, onUpvote, onClick }) {
             {query.comments} {query.comments === 1 ? 'comment' : 'comments'}
           </span>
 
-          {/* Reply — opens the replies view */}
+          {/* Reply / View — opens the replies view */}
           <button
             type="button"
             className="flex items-center gap-1.5 transition hover:text-[#8c6a40]"
             onClick={() => onClick?.(query.id)}
           >
             <Reply className="h-3.5 w-3.5" strokeWidth={1.8} />
-            Reply
+            {isResolved ? 'View' : 'Reply'}
+          </button>
+
+          {/* Report — not yet supported */}
+          <button
+            type="button"
+            className="flex items-center gap-1 text-[11px] transition hover:text-red-500"
+            onClick={() => notifyError("Report doesn't supported yet.")}
+          >
+            <Flag className="h-3 w-3" strokeWidth={1.8} />
+            Report
           </button>
 
           <span className="flex items-center gap-1.5" style={{ color: statusColor }}>

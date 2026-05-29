@@ -2,6 +2,8 @@ import Answer from '../models/answer.model.js'
 import Comment from '../models/comment.model.js'
 import Notification from '../models/notification.model.js'
 import Question from '../models/question.model.js'
+import User from '../models/user.model.js'
+import Vote from '../models/vote.model.js'
 import { awardSpark, reserveBounty } from '../services/spark.service.js'
 import {
   createHttpError,
@@ -191,9 +193,16 @@ export async function listQuestions(req, res, next) {
       Question.countDocuments(filter),
     ])
 
+    // Map author display names from author_id (single batched lookup)
+    const authorIds = [...new Set(questions.map((q) => q.author_id))]
+    const users = await User.find({ user_id: { $in: authorIds } })
+      .select('user_id name')
+      .lean()
+    const nameById = Object.fromEntries(users.map((u) => [u.user_id, u.name]))
+
     res.json({
       success: true,
-      questions,
+      questions: questions.map((q) => ({ ...q, author_name: nameById[q.author_id] || 'User' })),
       pagination: paginationResult(page, limit, total),
     })
   } catch (error) {
@@ -257,11 +266,36 @@ export async function getQuestionById(req, res, next) {
     }
 
     const [answers, comments] = await Promise.all([
-      includeAnswers ? Answer.find(answerFilter).sort({ created_at: -1 }).lean() : [],
+      includeAnswers ? Answer.find(answerFilter).sort({ is_accepted: -1, score: -1, created_at: 1 }).lean() : [],
       includeComments ? Comment.find(commentFilter).sort({ created_at: 1 }).lean() : [],
     ])
 
-    res.json({ success: true, question, answers, comments })
+    // Attach author display names without a per-row lookup
+    const authorIds = new Set([
+      question.author_id,
+      ...answers.map((a) => a.author_id),
+      ...comments.map((c) => c.author_id),
+    ])
+    const users = await User.find({ user_id: { $in: [...authorIds] } })
+      .select('user_id name')
+      .lean()
+    const nameById = Object.fromEntries(users.map((u) => [u.user_id, u.name]))
+    const withAuthor = (doc) => ({ ...doc, author_name: nameById[doc.author_id] || 'User' })
+
+    // Current user's vote on each answer (for highlight / deselect)
+    const myVotes = await Vote.find({
+      user_id: req.user.userId,
+      target_type: 'answer',
+      target_id: { $in: answers.map((a) => a.answer_id) },
+    }).lean()
+    const voteByAnswer = Object.fromEntries(myVotes.map((v) => [v.target_id, v.value]))
+
+    res.json({
+      success: true,
+      question: withAuthor(question.toObject()),
+      answers: answers.map((a) => ({ ...withAuthor(a), my_vote: voteByAnswer[a.answer_id] || 0 })),
+      comments: comments.map(withAuthor),
+    })
   } catch (error) {
     next(error)
   }

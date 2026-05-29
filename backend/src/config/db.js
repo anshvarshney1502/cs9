@@ -23,6 +23,11 @@ const connectDB = async () => {
   try {
     const conn = await mongoose.connect(mongoUri, {
       dbName: process.env.MONGODB_DB_NAME,
+      tls: true,
+      tlsAllowInvalidCertificates: false,
+      tlsAllowInvalidHostnames: false,
+      serverSelectionTimeoutMS: 15000,
+      socketTimeoutMS: 45000,
     });
     console.log(`MongoDB connected: ${conn.connection.host}`);
   } catch (error) {

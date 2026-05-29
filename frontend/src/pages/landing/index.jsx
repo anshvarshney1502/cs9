@@ -102,7 +102,11 @@ function Landing() {
     if (currentUser) {
       navigate(currentUser.role === 'ADMIN' ? '/admin' : '/dashboard')
     } else {
-      setIsLoginModalOpen(true)
+      if (isLoginModalOpen) {
+        setIsLoginModalOpen(false)
+      } else {
+        setIsLoginModalOpen(true)
+      }
     }
   }
 

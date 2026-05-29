@@ -1,4 +1,4 @@
-import { axisPrivate } from '../../api/axios'
+import { axisPrivate, axiosPublic } from '../../api/axios'
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -30,11 +30,14 @@ export function normalizeQuestion(q, currentUserId) {
 
   const meta = timeAgo(q.created_at)
 
+  const isSelf = q.author_id === currentUserId
+
   return {
     id:         q.question_id,
     upvotes:    q.upvotes ?? 0,
     hasUpvoted: Array.isArray(q.upvoted_by) && q.upvoted_by.includes(currentUserId),
-    author:     q.author_id === currentUserId ? 'self' : 'other',
+    author:     isSelf ? 'self' : 'other',
+    authorName: isSelf ? 'You' : (q.author_name || 'User'),
     timestamp:  new Date(q.created_at).getTime(),
     tags,
     meta,
@@ -81,6 +84,30 @@ export async function fetchQuestionTags() {
   return data.tags || []
 }
 
+// ─── Question detail / thread ─────────────────────────────────────────────────
+
+export async function fetchQuestionDetail(questionId) {
+  const { data } = await axisPrivate().get(`/api/questions/${questionId}`)
+  return data // { question, answers, comments }
+}
+
+export async function postAnswer(questionId, body) {
+  const { data } = await axisPrivate().post(`/api/questions/${questionId}/answers`, { body })
+  return data
+}
+
+export async function voteAnswer(answerId, vote) {
+  const { data } = await axisPrivate().post(`/api/answers/${answerId}/vote`, { vote })
+  return data
+}
+
+export async function reportContent({ targetType, targetId, reason, description }) {
+  const { data } = await axisPrivate().post('/api/flags', {
+    targetType, targetId, reason, description,
+  })
+  return data
+}
+
 // ─── Notifications ───────────────────────────────────────────────────────────
 
 export async function fetchNotifications() {
@@ -101,6 +128,10 @@ export async function markAllNotifRead() {
 export async function fetchUserContributions(userId, limit = 10) {
   const { data } = await axisPrivate().get(`/api/users/${userId}/contributions?limit=${limit}`)
   return data
+}
+
+export async function logoutUser() {
+  await axisPrivate().post('/api/auth/logout')
 }
 
 // ─── Profile ───────────────────────────────────────────────────────────────

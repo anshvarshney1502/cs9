@@ -1,6 +1,10 @@
 import Landing from '../pages/landing'
 import AdminHome from '../pages/admin'
-import UserHome from '../pages/user'
+import UserLayout from '../pages/user/layout'
+import DashboardPage from '../pages/user/pages/Dashboard'
+import RaiseQueryPage from '../pages/user/pages/RaiseQuery'
+import QueryDetailPage from '../pages/user/pages/QueryDetail'
+import ProfileSettingsPage from '../pages/user/pages/ProfileSettings'
 import ProtectedRoute from './ProtectedRoute'
 
 export const routes = [
@@ -17,11 +21,16 @@ export const routes = [
     ),
   },
   {
-    path: '/dashboard/*',
     element: (
       <ProtectedRoute>
-        <UserHome />
+        <UserLayout />
       </ProtectedRoute>
     ),
+    children: [
+      { path: '/dashboard', element: <DashboardPage /> },
+      { path: '/profile', element: <ProfileSettingsPage /> },
+      { path: '/raise-query', element: <RaiseQueryPage /> },
+      { path: '/query/:queryId', element: <QueryDetailPage /> },
+    ],
   },
 ]

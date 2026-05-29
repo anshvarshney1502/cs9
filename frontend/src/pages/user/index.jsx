@@ -9,10 +9,10 @@ function UserHome() {
   return (
     <Routes>
       <Route element={<UserLayout />}>
-        <Route index element={<DashboardPage />} />
-        <Route path="raise-query" element={<RaiseQueryPage />} />
-        <Route path="query/:queryId" element={<QueryDetailPage />} />
-        <Route path="profile-settings" element={<ProfileSettingsPage />} />
+        <Route path="/dashboard" element={<DashboardPage />} />
+        <Route path="/raise-query" element={<RaiseQueryPage />} />
+        <Route path="/query/:queryId" element={<QueryDetailPage />} />
+        <Route path="/profile" element={<ProfileSettingsPage />} />
       </Route>
     </Routes>
   )

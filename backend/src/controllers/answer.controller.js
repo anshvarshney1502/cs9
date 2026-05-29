@@ -167,29 +167,43 @@ export async function voteAnswer(req, res, next) {
       target_id: answer.answer_id,
     })
 
+    let myVote = voteValue
+
     if (existingVote) {
       if (existingVote.value === voteValue) {
-        throw createHttpError(409, 'Duplicate vote')
-      }
-
-      // Flip the vote: reverse the old counter and apply the new one
-      const upvotesDelta = voteValue === 1 ? 1 : -1
-      const downvotesDelta = voteValue === -1 ? 1 : -1
-      const scoreDelta = voteValue === 1 ? 2 : -2 // flip from -1→+1 or +1→-1
-
-      existingVote.value = voteValue
-      await existingVote.save()
-
-      await Answer.updateOne(
-        { answer_id: answer.answer_id },
-        {
-          $inc: {
-            upvotes: upvotesDelta,
-            downvotes: downvotesDelta,
-            score: scoreDelta,
+        // Same arrow clicked again → deselect (remove the vote)
+        await existingVote.deleteOne()
+        await Answer.updateOne(
+          { answer_id: answer.answer_id },
+          {
+            $inc: {
+              upvotes: voteValue === 1 ? -1 : 0,
+              downvotes: voteValue === -1 ? -1 : 0,
+              score: -voteValue,
+            },
           },
-        },
-      )
+        )
+        myVote = 0
+      } else {
+        // Flip the vote: reverse the old counter and apply the new one
+        const upvotesDelta = voteValue === 1 ? 1 : -1
+        const downvotesDelta = voteValue === -1 ? 1 : -1
+        const scoreDelta = voteValue === 1 ? 2 : -2 // flip from -1→+1 or +1→-1
+
+        existingVote.value = voteValue
+        await existingVote.save()
+
+        await Answer.updateOne(
+          { answer_id: answer.answer_id },
+          {
+            $inc: {
+              upvotes: upvotesDelta,
+              downvotes: downvotesDelta,
+              score: scoreDelta,
+            },
+          },
+        )
+      }
     } else {
       // New vote
       await Vote.create({
@@ -226,7 +240,13 @@ export async function voteAnswer(req, res, next) {
     // Re-fetch the updated answer for accurate score in the response
     const updated = await Answer.findOne({ answer_id: answer.answer_id }).lean()
 
-    res.json({ success: true, score: updated.score })
+    res.json({
+      success: true,
+      score: updated.score,
+      upvotes: updated.upvotes,
+      downvotes: updated.downvotes,
+      myVote,
+    })
   } catch (error) {
     next(error)
   }

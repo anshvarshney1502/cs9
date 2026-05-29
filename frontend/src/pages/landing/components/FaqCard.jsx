@@ -34,7 +34,7 @@ function FaqCard({ faq, sectionId, isOpen, onToggle }) {
         }`}
       >
         <div className="overflow-hidden">
-          <p className="px-4 pb-4 text-[13px] leading-6 text-[#444748]">{faq.answer}</p>
+          <p className="px-4 pb-4 text-[13px] leading-6 text-[#444748]" dangerouslySetInnerHTML={{ __html: faq.answer }} />
         </div>
       </div>
     </article>

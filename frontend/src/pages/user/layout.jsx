@@ -4,7 +4,7 @@ import DashboardHeader from './components/Header/DashboardHeader'
 import LeftPane from './components/LeftPane/LeftPane'
 import Footer from '../../components/Footer/Footer'
 import useAuthStore from '../../store/useAuthStore'
-import { fetchNotifications, markAllNotifRead } from './service'
+import { fetchNotifications, markAllNotifRead, logoutUser } from './service'
 
 function UserLayout() {
   const navigate = useNavigate()
@@ -13,6 +13,7 @@ function UserLayout() {
   const [notifications, setNotifications] = useState([])
   const [unreadCount, setUnreadCount]     = useState(0)
   const [isDark, setIsDark]               = useState(false)
+  const [isLeftPaneCollapsed, setIsLeftPaneCollapsed] = useState(false)
   const [currentView, setCurrentView]     = useState('dashboard')
   const [sidebarNav, setSidebarNav]        = useState('Dashboard')
   const [searchModalOpen, setSearchModalOpen] = useState(false)
@@ -30,7 +31,12 @@ function UserLayout() {
       .catch(() => {})
   }, [])
 
-  function handleLogout() {
+  async function handleLogout() {
+    try {
+      await logoutUser()
+    } catch {
+      // Clear locally even if API call fails
+    }
     clearUser()
     navigate('/')
   }
@@ -54,6 +60,8 @@ function UserLayout() {
       {/* Main row: LeftPane + content */}
       <div className="flex flex-1">
         <LeftPane
+          isCollapsed={isLeftPaneCollapsed}
+          onToggleCollapse={() => setIsLeftPaneCollapsed(v => !v)}
           sidebarNav={sidebarNav}
           currentView={currentView}
           onNavigate={label => {
@@ -72,10 +80,10 @@ function UserLayout() {
             unreadCount={unreadCount}
             isDark={isDark}
             onSearchOpen={() => setSearchModalOpen(true)}
-            onRaiseQuery={() => navigate('/dashboard/raise-query')}
+            onRaiseQuery={() => navigate('/raise-query')}
             onNotifOpen={handleNotifOpen}
             onDarkToggle={() => setIsDark(v => !v)}
-            onProfileSettings={() => navigate('/dashboard/profile-settings')}
+            onProfileSettings={() => navigate('/profile')}
             onLogout={handleLogout}
           />
 

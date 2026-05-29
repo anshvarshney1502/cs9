@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { useOutletContext } from 'react-router-dom'
+import { useNavigate, useOutletContext } from 'react-router-dom'
 import { Link as LinkIcon } from 'lucide-react'
 import QuestionCard from '../../components/QuestionCard/QuestionCard'
 import FAQCategories from '../../components/FAQCategories/FAQCategories'
@@ -8,6 +8,7 @@ import Button from '../../../../components/Button/Button'
 import { fetchQuestions, fetchQuestionTags, fetchUserContributions, voteQuestion, normalizeQuestion } from '../../service'
 
 function DashboardPage() {
+  const navigate = useNavigate()
   const { user, sidebarNav, searchModalOpen, setSearchModalOpen } = useOutletContext()
 
   const [queries, setQueries]                 = useState([])
@@ -18,25 +19,9 @@ function DashboardPage() {
   const [categories, setCategories]           = useState([])   // tags from DB
   const [contributions, setContributions]     = useState([])
   const [loadingContributions, setLoadingContributions] = useState(true)
-  const [selectedQueryId, setSelectedQueryId] = useState(null)   // inline detail view
-
-  // ── Load question detail (inline) ───────────────────────────────────────────
-  const loadQueryDetail = useCallback(async (questionId) => {
-    setLoadingQueries(true)
-    try {
-      const data = await fetchQuestions({ questionId })
-      const q = Array.isArray(data.questions) ? data.questions[0] : data
-      setQueries([normalizeQuestion(q, user?.userId)])
-    } catch {
-      setQueries([])
-    } finally {
-      setLoadingQueries(false)
-    }
-  }, [user?.userId])
 
   function handleCardClick(id) {
-    setSelectedQueryId(id)
-    loadQueryDetail(id)
+    navigate(`/query/${id}`)
   }
 
   // ── Load contributions ──────────────────────────────────────────────────────
@@ -182,20 +167,6 @@ function DashboardPage() {
                 ? `No results found${searchQuery ? ` for "${searchQuery}"` : ''}${activeTags.length ? ` in ${activeTags.join(', ')}` : ''}`
                 : 'No queries yet. Ask your first question!'}
             </p>
-          )}
-
-          {/* Back button — shown when viewing a question detail */}
-          {selectedQueryId && (
-            <button
-              type="button"
-              onClick={() => {
-                setSelectedQueryId(null)
-                loadQuestions()
-              }}
-              className="mb-4 text-[13px] font-medium text-[#8c6a40] transition hover:underline"
-            >
-              ← Back to all queries
-            </button>
           )}
 
           {/* Cards */}

@@ -1,46 +1,72 @@
 # DashboardHeader
 
-Top navigation bar for the authenticated student dashboard.
+Top navigation bar for the student dashboard. Contains: search trigger, "Raise New Query" button, notification bell, dark mode toggle, and user avatar + dropdown menu.
 
 ## Props
 
-| Prop | Type | Required | Description |
-|------|------|----------|-------------|
-| `user` | `object` | ✅ | User object with `name` and `role` |
-| `initials` | `string` | ✅ | 2-letter initials for avatar |
-| `currentView` | `string` | ✅ | Current view name (`'dashboard'`, etc.) |
-| `notifications` | `array` | ✅ | Array of notification objects |
-| `unreadCount` | `number` | ✅ | Count of unread notifications |
-| `isDark` | `boolean` | ✅ | Dark mode toggle state |
-| `onSearchOpen` | `function` | ✅ | Opens the search modal |
-| `onRaiseQuery` | `function` | ✅ | Navigates to raise query view |
-| `onNotifOpen` | `function` | ✅ | Fetches/loads notifications |
-| `onDarkToggle` | `function` | ✅ | Toggles dark mode |
-| `onProfileSettings` | `function` | ✅ | Opens profile settings view |
-| `onLogout` | `function` | ✅ | Triggers logout flow |
+| Prop | Type | Description |
+|------|------|-------------|
+| `user` | `object \| null` | Current user object from `useAuthStore` |
+| `initials` | `string` | Avatar initials, e.g. `"AB"` |
+| `currentView` | `string` | Controls visibility of the "Raise New Query" button (`'dashboard'` shows it) |
+| `notifications` | `array` | Array of notification objects to display in the dropdown |
+| `unreadCount` | `number` | Count of unread notifications — shows a red dot on the bell icon |
+| `isDark` | `boolean` | Current dark mode state — determines Sun/Moon icon |
+| `onSearchOpen` | `function` | Opens the search modal in DashboardPage |
+| `onRaiseQuery` | `function` | Navigates to `/raise-query` |
+| `onNotifOpen` | `function` | Called when bell is clicked to open notifications (marks them as read) |
+| `onDarkToggle` | `function` | Toggles dark mode state |
+| `onProfileSettings` | `function` | Navigates to `/profile` |
+| `onLogout` | `function` | Logs the user out (calls API + clears Zustand + redirects) |
 
 ## Layout
 
-- **Left slot** — Search trigger button (opens modal on click)
-- **Center-right** — `Raise Query` button (shown only on dashboard view), bell icon with unread badge, dark mode toggle
-- **Far right (10% lane)** — User avatar + name/role chip, opens user dropdown on click (Profile Settings, Logout)
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│  [Search bar placeholder]     [Raise New Query]  [🔔] [🌙/☀️]  [👤]  │
+└─────────────────────────────────────────────────────────────────────┘
+```
 
-## Notifications Dropdown
+## Features
 
-Triggered by bell icon. Shows:
-- Unread items in `#f0f9ff` blue-tinted background
-- Read items in white
-- "View All" footer link
-- Unread dot indicator on bell icon when `unreadCount > 0`
+### Search Bar
+- Fixed `w-[420px]` input-style button in the header
+- Clicking triggers `onSearchOpen()` → opens the search modal in `DashboardPage`
+- Placeholder: `"Search FAQs, categories, or status…"`
 
-## User Menu Dropdown
+### Raise New Query Button
+- Only visible when `currentView === 'dashboard'`
+- Navigates via `onRaiseQuery()` → `/raise-query`
 
-Triggered by clicking the avatar/name area. Contains:
-- **Profile Settings** — opens `ProfileSettingsView`
-- **Logout** — calls `onLogout`
+### Notification Bell
+- Red dot indicator when `unreadCount > 0`
+- Click calls `onNotifOpen()` (marks all as read) and opens the dropdown
+- Dropdown shows notification list, unread items highlighted in `#f0f9ff`
+- `View All` footer link (no-op / placeholder)
 
-## Notes
+### Dark Mode Toggle
+- Sun icon when dark mode on, Moon icon when off
+- Calls `onDarkToggle()` on click
 
-- Header itself handles `showNotif` and `showUserMenu` local state
-- Clicking the header background closes both dropdowns
-- Avatar uses `#8c6a40` background with white initials
+### User Menu Dropdown
+- Avatar circle with initials + user name (capitalized) + role chip
+- **Profile Settings** — calls `onProfileSettings()` → `/profile`
+- **Logout** — calls `onLogout()` → `POST /api/auth/logout` + clear store + redirect to `/`
+
+### Interaction Notes
+- Clicking anywhere on the header (outside dropdowns) calls `closeAll()` → closes both notification and user menus
+- Dropdown menus stop propagation — clicking inside them does NOT close the other dropdown
+- `showNotif` and `showUserMenu` are independent; opening one closes the other
+
+## State
+
+All UI state (`showNotif`, `showUserMenu`) is **local** to this component — no props needed for open/close.
+
+## Typography
+
+| Element | Style |
+|---------|-------|
+| Username | `text-[13px] font-medium capitalize` |
+| Role chip | `text-[10px] font-semibold uppercase tracking-wide text-[#747878]` |
+| Nav items in dropdown | `text-[13px] font-medium` |
+| Dropdown section header | `text-[13px] font-semibold` |
