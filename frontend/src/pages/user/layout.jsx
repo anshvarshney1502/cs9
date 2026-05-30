@@ -105,7 +105,7 @@ function UserLayout() {
             isDark={isDark}
             toggleDark={toggleDark}
             searchQuery={searchQuery}
-            onSearchChange={setSearchQuery}
+            onSearchOpen={setSearchQuery}
             selectedTags={selectedTags}
             onTagsChange={setSelectedTags}
             onNotifOpen={handleNotifOpen}
@@ -123,9 +123,7 @@ function UserLayout() {
               setCurrentView,
               initials,
               searchQuery,
-              setSearchQuery,
               selectedTags,
-              setSelectedTags,
             }}
           />
         </div>

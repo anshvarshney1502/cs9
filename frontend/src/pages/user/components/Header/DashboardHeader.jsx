@@ -1,282 +1,211 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState } from 'react'
 import {
   Popover, PopoverButton, PopoverPanel,
   Menu, MenuButton, MenuItems, MenuItem,
 } from '@headlessui/react'
-import {
-  Settings, Search, SlidersHorizontal, PlusCircle, Bell, LogOut,
-  Moon, Sun, X,
-} from 'lucide-react'
-
-/**
- * User dashboard header.
- *
- * Props:
- *  - searchQuery       — current search value (controlled)
- *  - onSearchChange    — called on every keystroke
- *  - notifications     — array of notification items
- *  - unreadCount       — number of unread notifications
- *  - isDark            — current dark mode state
- *  - toggleDark        — fn, toggles dark mode via useThemeStore
- *  - selectedTags      — string[], currently selected filter tags from header
- *  - onTagsChange      — fn, called with new string[] when tags are toggled
- *  - onNotifViewAll    — fn, called when "View All" is clicked
- *  - user              — { name, role }
- *  - initials          — string, two-letter initials
- *  - onLanding         — fn, navigate to public FAQ page
- *  - onLogout          — fn, log out user
- *  - onProfileSettings — fn, open profile settings
- */
+import { Settings, Search, SlidersHorizontal, PlusCircle, Bell, LogOut, Moon, Sun } from 'lucide-react'
+import { timeAgo } from '../../service'
+import Button from '../../../../components/Button/Button'
 
 const ALL_TAGS = ['DSA', 'Web Dev', 'CP', 'AI/ML', 'Systems', 'OS', 'DBMS', 'OOP', 'Aptitude', 'Interview Exp']
 
 function DashboardHeader({
-  searchQuery = '',
-  onSearchChange,
-  notifications = [],
-  unreadCount = 0,
-  isDark,
-  toggleDark,
-  selectedTags = [],
-  onTagsChange,
-  onNotifViewAll,
   user,
   initials,
-  onLanding,
-  onLogout,
+  currentView,
+  showRaiseQuery = true,
+  notifications,
+  unreadCount,
+  isDark,
+  onSearchOpen,         // fn(value: string) — called on search input change
+  onRaiseQuery,
+  onNotifOpen,
+  onNotifViewAll,
+  onDarkToggle,
   onProfileSettings,
+  onLogout,
+  selectedTags = [],    // string[], from layout state
+  onTagsChange,         // fn(tags: string[]), called when tag toggled in popover
 }) {
-  const [searchInput, setSearchInput] = useState(searchQuery)
-  const searchTimeout = useRef(null)
+  const [localTags, setLocalTags] = useState(selectedTags)
 
-  // Sync external changes (e.g. clear from parent)
-  useEffect(() => {
-    setSearchInput(searchQuery)
-  }, [searchQuery])
-
-  function handleSearchChange(e) {
-    const val = e.target.value
-    setSearchInput(val)
-    clearTimeout(searchTimeout.current)
-    searchTimeout.current = setTimeout(() => {
-      onSearchChange?.(val)
-    }, 300)
-  }
-
-  function handleSearchClear() {
-    setSearchInput('')
-    onSearchChange?.('')
-  }
-
-  function toggleTag(tag) {
-    const next = selectedTags.includes(tag)
-      ? selectedTags.filter(t => t !== tag)
-      : [...selectedTags, tag]
+  function handleTagToggle(tag) {
+    const next = localTags.includes(tag)
+      ? localTags.filter(t => t !== tag)
+      : [...localTags, tag]
+    setLocalTags(next)
     onTagsChange?.(next)
   }
 
-  const tagCount = selectedTags.length
+  const activeTagCount = localTags.length
 
   return (
-    <header className="sticky top-0 z-40 border-b border-[#dde1e3] bg-white px-4 py-2.5 shadow-sm">
-      <div className="mx-auto flex max-w-[1200px] items-center gap-3">
+    <header className="relative flex items-center justify-between border-b border-[#c4c7c7] bg-white px-8 py-4">
 
-        {/* Logo / brand */}
-        <div className="flex shrink-0 cursor-pointer items-center gap-2" onClick={onLanding}>
-          <img src="/logo.svg" alt="QueryHub" className="h-8 w-8" />
-          <span className="text-[15px] font-bold text-[#111827]">QueryHub</span>
-        </div>
+      {/* Search bar — inline with tag filter button */}
+      <div className="relative flex w-[420px] items-center gap-2 rounded-lg bg-[#edeeef] px-3 py-2 transition hover:bg-[#e5e6e7]">
+        <Search className="h-4 w-4 shrink-0 text-[#747878]" strokeWidth={1.8} />
 
-        {/* Search bar — inline, live */}
-        <div className="flex flex-1 items-center gap-2">
-          <div className="relative flex-1 max-w-[480px]">
-            <Search
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-[#9ca3af]"
-              size={15}
-              strokeWidth={2}
-            />
-            <input
-              type="text"
-              value={searchInput}
-              onChange={handleSearchChange}
-              placeholder="Search queries…"
-              className="w-full rounded-lg border border-[#dde1e3] bg-[#f8f9fa] py-2 pl-9 pr-8 text-[13px] text-[#191c1d] placeholder-[#9ca3af] transition focus:border-[#8c6a40] focus:outline-none focus:ring-1 focus:ring-[#8c6a40]"
-            />
-            {searchInput && (
-              <button
-                type="button"
-                onClick={handleSearchClear}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#9ca3af] hover:text-[#444748]"
-              >
-                <X size={13} />
-              </button>
+        <input
+          type="text"
+          placeholder="Search FAQs, categories, or status…"
+          className="flex-1 bg-transparent text-[12px] text-[#191c1d] placeholder-[#747878] outline-none"
+          onChange={e => onSearchOpen?.(e.target.value)}
+          onFocus={() => onSearchOpen?.('')}
+        />
+
+        <span className="h-4 w-px bg-[#c4c7c7]" />
+
+        {/* Filter — tag popover */}
+        <Popover>
+          <PopoverButton className="relative flex shrink-0 items-center gap-1 text-[#9ca3af] transition hover:text-[#191c1d]">
+            <SlidersHorizontal className="h-4 w-4" strokeWidth={1.8} />
+            {activeTagCount > 0 && (
+              <span className="absolute -right-1.5 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-[#8c6a40] text-[9px] font-bold text-white">
+                {activeTagCount}
+              </span>
             )}
-          </div>
+          </PopoverButton>
 
-          {/* Tag filter — small popover */}
-          <Popover>
-            <PopoverButton as="div" className="relative cursor-pointer">
-              <div className="flex h-[38px] items-center gap-1.5 rounded-lg border border-[#dde1e3] bg-white px-3 text-[13px] text-[#444748] transition hover:border-[#8c6a40] hover:text-[#8c6a40]">
-                <SlidersHorizontal size={14} strokeWidth={2} />
-                <span className="hidden sm:inline">Filter</span>
-                {tagCount > 0 && (
-                  <span className="flex h-4 w-4 items-center justify-center rounded-full bg-[#8c6a40] text-[10px] font-bold text-white">
-                    {tagCount}
-                  </span>
-                )}
-              </div>
-
-              <PopoverPanel
-                className="absolute right-0 top-10 z-50 w-64 overflow-hidden rounded-xl border border-[#e5e7eb] bg-white shadow-xl focus:outline-none"
-              >
-                <p className="border-b border-[#f3f4f6] px-4 py-2.5 text-[11px] font-semibold uppercase tracking-wide text-[#9ca3af]">
-                  Filter by tag
-                </p>
-                <div className="flex flex-wrap gap-1.5 p-3">
-                  {ALL_TAGS.map(tag => (
-                    <button
-                      key={tag}
-                      type="button"
-                      onClick={() => toggleTag(tag)}
-                      className={`rounded-full border px-2.5 py-1 text-[12px] font-medium transition ${
-                        selectedTags.includes(tag)
-                          ? 'border-[#8c6a40] bg-[#8c6a40] text-white'
-                          : 'border-[#dde1e3] text-[#444748] hover:border-[#8c6a40] hover:text-[#8c6a40]'
-                      }`}
-                    >
-                      {tag}
-                    </button>
-                  ))}
-                </div>
-                {tagCount > 0 && (
-                  <div className="border-t border-[#f3f4f6] px-3 py-2">
-                    <button
-                      type="button"
-                      onClick={() => onTagsChange?.([])}
-                      className="text-[11px] font-semibold text-[#8c6a40] hover:underline"
-                    >
-                      Clear all
-                    </button>
-                  </div>
-                )}
-              </PopoverPanel>
-            </PopoverButton>
-          </Popover>
-        </div>
-
-        {/* Right actions */}
-        <div className="flex shrink-0 items-center gap-1">
-          {/* Notification bell */}
-          <Popover>
-            <PopoverButton className="relative flex h-9 w-9 items-center justify-center rounded-full text-[#444748] transition hover:bg-black/5">
-              <Bell size={18} strokeWidth={1.8} />
-              {unreadCount > 0 && (
-                <span className="absolute right-1 top-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[9px] font-bold text-white">
-                  {unreadCount > 9 ? '9+' : unreadCount}
-                </span>
-              )}
-            </PopoverButton>
-            <PopoverPanel className="absolute right-0 top-10 z-50 w-80 overflow-hidden rounded-lg border border-[#c4c7c7] bg-white shadow-lg focus:outline-none">
-              <p className="border-b border-[#c4c7c7] px-4 py-3 text-[13px] font-semibold text-[#191c1d]">
-                Notifications
-              </p>
-              {notifications.length === 0 ? (
-                <p className="px-4 py-5 text-center text-[12px] text-[#747878]">No notifications yet</p>
-              ) : (
-                notifications.slice(0, 3).map(n => (
-                  <div
-                    key={n.notification_id || n.id}
-                    className={`border-b border-[#f3f4f6] px-4 py-3 ${n.is_read ? 'bg-white' : 'bg-[#f0f9ff]'}`}
-                  >
-                    <p className="mb-1 text-[12px] leading-snug text-[#444748]">{n.body || n.title}</p>
-                    <span className="text-[10px] font-medium text-[#9ca3af]">
-                      {n.created_at ? new Date(n.created_at).toLocaleString() : ''}
-                    </span>
-                  </div>
-                ))
-              )}
-              {notifications.length > 3 && (
+          <PopoverPanel className="absolute left-0 top-10 z-50 w-64 overflow-hidden rounded-xl border border-[#e5e7eb] bg-white shadow-xl focus:outline-none">
+            <p className="border-b border-[#f3f4f6] px-4 py-2.5 text-[11px] font-semibold uppercase tracking-wide text-[#9ca3af]">
+              Filter by tag
+            </p>
+            <div className="flex flex-wrap gap-1.5 p-3">
+              {ALL_TAGS.map(tag => (
+                <button
+                  key={tag}
+                  type="button"
+                  onClick={() => handleTagToggle(tag)}
+                  className={`rounded-full border px-2.5 py-1 text-[12px] font-medium transition ${
+                    localTags.includes(tag)
+                      ? 'border-[#8c6a40] bg-[#8c6a40] text-white'
+                      : 'border-[#dde1e3] text-[#444748] hover:border-[#8c6a40] hover:text-[#8c6a40]'
+                  }`}
+                >
+                  {tag}
+                </button>
+              ))}
+            </div>
+            {activeTagCount > 0 && (
+              <div className="border-t border-[#f3f4f6] px-3 py-2">
                 <button
                   type="button"
-                  onClick={onNotifViewAll}
-                  className="w-full cursor-pointer bg-[#f8f9fa] py-2.5 text-center text-[11px] font-semibold text-[#8c6a40] transition hover:bg-[#edeeef]"
+                  onClick={() => { setLocalTags([]); onTagsChange?.([]) }}
+                  className="text-[11px] font-semibold text-[#8c6a40] hover:underline"
                 >
-                  View All
+                  Clear all
                 </button>
-              )}
-            </PopoverPanel>
-          </Popover>
+              </div>
+            )}
+          </PopoverPanel>
+        </Popover>
+      </div>
 
-          {/* Dark mode toggle */}
-          <button
-            type="button"
-            onClick={toggleDark}
-            className="flex h-9 w-9 items-center justify-center rounded-full text-[#444748] transition hover:bg-black/5"
+      {/* Right-side action group */}
+      <div className="flex items-center gap-6">
+        {showRaiseQuery && (
+          <Button
+            variant="secondary"
+            className="gap-2 rounded-lg border-transparent bg-[#8c6a40]/80 px-4 text-[11px] font-bold uppercase tracking-wide text-white hover:border-transparent hover:bg-[#7a5c35]"
+            onClick={onRaiseQuery}
           >
-            {isDark ? <Sun size={17} strokeWidth={1.8} /> : <Moon size={17} strokeWidth={1.8} />}
-          </button>
+            <PlusCircle className="h-4 w-4" strokeWidth={1.8} /> Raise New Query
+          </Button>
+        )}
 
-          {/* Ask / Raise button */}
-          <button
-            type="button"
-            onClick={() => window.location.href = '/ask'}
-            className="hidden sm:flex h-9 items-center gap-1.5 rounded-lg bg-[#8c6a40] px-3 text-[13px] font-semibold text-white transition hover:bg-[#7a5c38]"
+        {/* Bell */}
+        <Popover className="relative">
+          <PopoverButton
+            onClick={() => onNotifOpen?.()}
+            className="relative p-1 text-[#444748] transition hover:text-black focus:outline-none"
           >
-            <PlusCircle size={15} strokeWidth={2} />
-            Raise New Query
-          </button>
+            <Bell className="h-[18px] w-[18px]" strokeWidth={1.8} />
+            {unreadCount > 0 && (
+              <span className="absolute right-0.5 top-0.5 h-2 w-2 rounded-full bg-red-500" />
+            )}
+          </PopoverButton>
 
-          {/* User menu */}
-          <Menu as="div" className="relative">
-            <MenuButton className="flex h-9 w-9 items-center justify-center rounded-full bg-[#0b1528] text-[13px] font-bold text-white transition hover:opacity-90">
+          <PopoverPanel className="absolute right-0 top-9 z-50 w-80 overflow-hidden rounded-lg border border-[#c4c7c7] bg-white shadow-lg focus:outline-none">
+            <p className="border-b border-[#c4c7c7] px-4 py-3 text-[13px] font-semibold text-[#191c1d]">
+              Notifications
+            </p>
+            {notifications.length === 0 ? (
+              <p className="px-4 py-5 text-center text-[12px] text-[#747878]">No notifications yet</p>
+            ) : (
+              notifications.slice(0, 3).map(n => (
+                <div
+                  key={n.notification_id || n.id}
+                  className={`border-b border-[#f3f4f6] px-4 py-3 ${n.is_read ? 'bg-white' : 'bg-[#f0f9ff]'}`}
+                >
+                  <p className="mb-1 text-[12px] leading-snug text-[#444748]">{n.body || n.title}</p>
+                  <span className="text-[10px] font-medium text-[#9ca3af]">
+                    {n.created_at ? timeAgo(n.created_at) : ''}
+                  </span>
+                </div>
+              ))
+            )}
+            <button
+              type="button"
+              onClick={onNotifViewAll}
+              className="w-full cursor-pointer bg-[#f8f9fa] py-2.5 text-center text-[11px] font-semibold text-[#8c6a40] transition hover:bg-[#edeeef]"
+            >
+              View All
+            </button>
+          </PopoverPanel>
+        </Popover>
+
+        {/* Dark mode */}
+        <button
+          type="button"
+          className="p-1 text-[#444748] transition hover:text-black"
+          onClick={() => onDarkToggle()}
+        >
+          {isDark
+            ? <Sun  className="h-[18px] w-[18px]" strokeWidth={1.8} />
+            : <Moon className="h-[18px] w-[18px]" strokeWidth={1.8} />}
+        </button>
+
+        {/* Divider */}
+        <span className="h-8 w-px bg-[#c4c7c7]" />
+
+        {/* User menu */}
+        <Menu as="div" className="relative">
+          <MenuButton className="flex items-center gap-3 focus:outline-none">
+            <div className="text-right leading-tight">
+              <p className="text-[13px] font-medium capitalize text-[#191c1d]">{user?.name || 'Student'}</p>
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-[#747878]">{user?.role || 'USER'}</p>
+            </div>
+            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#8c6a40] text-[12px] font-bold text-white">
               {initials}
-            </MenuButton>
-            <MenuItems className="absolute right-0 top-10 z-50 w-44 overflow-hidden rounded-lg border border-[#e5e7eb] bg-white shadow-xl focus:outline-none">
-              <MenuItem>
-                {({ focus }) => (
-                  <button
-                    type="button"
-                    onClick={onProfileSettings}
-                    className={`flex w-full items-center gap-2.5 px-4 py-2.5 text-[13px] ${focus ? 'bg-[#f8f9fa] text-[#111827]' : 'text-[#444748]'}`}
-                  >
-                    <Settings size={14} />
-                    Profile Settings
-                  </button>
-                )}
-              </MenuItem>
-              <MenuItem>
-                {({ focus }) => (
-                  <button
-                    type="button"
-                    onClick={onLanding}
-                    className={`flex w-full items-center gap-2.5 px-4 py-2.5 text-[13px] ${focus ? 'bg-[#f8f9fa] text-[#111827]' : 'text-[#444748]'}`}
-                  >
-                    <Globe size={14} />
-                    View Public FAQ
-                  </button>
-                )}
-              </MenuItem>
-              <MenuItem>
-                {({ focus }) => (
-                  <button
-                    type="button"
-                    onClick={onLogout}
-                    className={`flex w-full items-center gap-2.5 px-4 py-2.5 text-[13px] ${focus ? 'bg-[#f8f9fa] text-red-600' : 'text-red-500'}`}
-                  >
-                    <LogOut size={14} />
-                    Logout
-                  </button>
-                )}
-              </MenuItem>
-            </MenuItems>
-          </Menu>
-        </div>
+            </div>
+          </MenuButton>
+
+          <MenuItems className="absolute right-0 top-12 z-50 min-w-[160px] overflow-hidden rounded-lg border border-[#c4c7c7] bg-white shadow-lg focus:outline-none">
+            <MenuItem>
+              <button
+                type="button"
+                className="flex w-full items-center gap-2 px-3 py-2 text-[11px] font-medium text-[#444748] transition data-focus:bg-[#f8f9fa]"
+                onClick={onProfileSettings}
+              >
+                <Settings className="h-3.5 w-3.5" strokeWidth={1.8} /> <span className="text-[13px] font-medium capitalize">Profile Settings</span>
+              </button>
+            </MenuItem>
+            <div className="h-px bg-[#c4c7c7]" />
+            <MenuItem>
+              <button
+                type="button"
+                className="flex w-full items-center gap-2 px-3 py-2 text-[11px] font-medium text-red-600 transition data-focus:bg-[#f8f9fa]"
+                onClick={onLogout}
+              >
+                <LogOut className="h-3.5 w-3.5" strokeWidth={1.8} /> <span className="text-[13px] font-medium">Logout</span>
+              </button>
+            </MenuItem>
+          </MenuItems>
+        </Menu>
       </div>
     </header>
   )
 }
-
-// Needed for the "View Public FAQ" menu item
-import { Globe } from 'lucide-react'
 
 export default DashboardHeader
