@@ -5,7 +5,7 @@ backend/
 ├── .env                         # Environment variables (PORT, MONGODB_URI, JWT_SECRET, ALLOWED_ORIGINS)
 ├── .env.example                 # Sample env vars
 ├── .gitignore
-├── er_diagram.png               # Entity-relationship diagram
+├── ER_DIAGRAM.md                # Entity-relationship diagram
 ├── package.json
 ├── package-lock.json
 └── src/
@@ -30,7 +30,8 @@ backend/
     │   ├── question.controller.js # CRUD for questions + search + tags
     │   ├── resolver.controller.js
     │   ├── spark.controller.js   # Spark points transactions
-    │   └── user.controller.js    # User listing, status, contributions
+    │   ├── user.controller.js    # User listing, status, contributions
+    │   └── README.md
     │
     ├── middleware/
     │   ├── authMiddleware.js    # JWT verify, verifyToken, checkRole
@@ -41,12 +42,13 @@ backend/
     │   ├── comment.model.js
     │   ├── flag.model.js
     │   ├── notification.model.js
+    │   ├── question-assignment-log.model.js
     │   ├── question.model.js
     │   ├── role.model.js
     │   ├── spark-transaction.model.js
-    │   ├── user.model.js
     │   ├── user-profile.model.js
     │   ├── user-role-mapper.model.js
+    │   ├── user.model.js
     │   └── vote.model.js
     │
     ├── routes/                  # Express routers — URL mapping to controllers
@@ -66,17 +68,33 @@ backend/
     │
     ├── services/                # Business logic layer
     │   ├── content.service.js
+    │   ├── question-allocation.service.js
     │   ├── role.service.js
     │   └── spark.service.js      # Spark points award/deduct logic
     │
-    ├── scripts/                 # One-off seed / migration scripts
+    ├── scheduled/
+    │   └── question-assignment.js  # Cron/scheduled question auto-assignment
+    │
+    ├── scripts/                 # One-off seed / migration / rebuild scripts
     │   ├── ingest-faqs.js
     │   ├── seed-admin.js
-    │   └── seed-all.js          # Seeds roles, users, FAQs, discussions, answers, comments, spark txns
+    │   ├── seed-all.js          # Seeds roles, users, FAQs, discussions, answers, comments, spark txns
+    │   ├── rebuild-comment-counters.js
+    │   ├── rebuild-question-counters.js
+    │   ├── rebuild-vote-counters.js
+    │   ├── recompute-reputation.js
+    │   └── migrations/
+    │       ├── 001-backfill-user-role-mappers.js
+    │       ├── 002-migrate-profile-identity.js
+    │       ├── 003-migrate-expert-profile-fields.js
+    │       ├── 004-migrate-upvoted-by-to-votes.js
+    │       ├── 005-reconcile-spark-points.js
+    │       └── 006-backfill-question-assignment-log-ids.js
     │
     └── utils/
         ├── auth-token.js        # Token signing / verification helpers
-        └── http.js              # Shared HTTP utility helpers
+        ├── featureLogger.js
+        └── http.js              # Shared HTTP utility helpers (createHttpError, etc.)
 ```
 
 ## Key Design Notes
@@ -85,8 +103,6 @@ backend/
 One `questions` collection serves both surfaces, discriminated by `kind`:
 - `kind: 'faq'` — published FAQ; must have exactly 1 answer before publishing
 - `kind: 'community'` — open Discussion; normal Q&A flow (Active → Answered → Resolved)
-
-> **Note:** Migration from `kind: 'faq' | 'community'` to `type: 'FAQ' | 'Discussion'` is pending.
 
 ### User Roles
 - `USER` — standard student
@@ -118,3 +134,12 @@ All routes under `/api/`. Authenticated routes require `Authorization: Bearer <t
 | `JWT_SECRET` | Secret for JWT signing |
 | `ALLOWED_ORIGINS` | CORS whitelist (comma-separated) |
 | `NODE_ENV` | `development` or `production` |
+
+## Key API Endpoints
+
+### Profile (used by AdminProfileView)
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/profile/me` | Get current user's profile |
+| PATCH | `/api/profile/me` | Update displayName, bio, etc. |
+| PATCH | `/api/profile/password` | Change password (requires current + new) |

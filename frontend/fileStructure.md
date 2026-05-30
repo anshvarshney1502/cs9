@@ -48,8 +48,26 @@ frontend/
     │   │   └── components/
     │   │       └── FaqCard.jsx   # FAQ accordion card
     │   │
-    │   ├── admin/                 # Admin dashboard (role-gated)
-    │   │   └── index.jsx
+    │   ├── admin/                 # Admin dashboard (role-gated SPA)
+    │   │   ├── index.jsx            # Shell: sidebar + header + view routing
+    │   │   ├── service.js           # Admin API calls (dashboard, notifications)
+    │   │   ├── README.md            # Admin section docs
+    │   │   ├── components/
+    │   │   │   ├── Header/
+    │   │   │   └── AdminHeader.jsx
+    │   │   └── LeftPane/
+    │   │       └── AdminLeftPane.jsx
+    │   │   └── pages/
+    │   │       ├── Dashboard/
+    │   │       │   └── index.jsx
+    │   │       ├── QueriesManagement/
+    │   │       │   └── index.jsx
+    │   │       ├── SparkLeaderboard/
+    │   │       │   └── index.jsx    # Live spark leaderboard
+    │   │       ├── FAQManagement/
+    │   │       │   └── index.jsx
+    │   │       └── AdminProfile/
+    │   │           └── index.jsx    # Profile settings
     │   │
     │   └── user/                 # Authenticated student section
     │       ├── index.jsx         # Route entry (redirects based on role)

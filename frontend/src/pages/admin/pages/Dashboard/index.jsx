@@ -16,7 +16,7 @@ import Button from '../../../../components/Button/Button'
 const chartBars = [
   { label: 'Academic', newClass: 'h-[66%]', resolvedClass: 'h-[42%]' },
   { label: 'NOC', newClass: 'h-[48%]', resolvedClass: 'h-[72%]' },
-  { label: 'Spurti', newClass: 'h-[82%]', resolvedClass: 'h-[54%]' },
+  { label: 'VIBE', newClass: 'h-[82%]', resolvedClass: 'h-[54%]' },
   { label: 'Stipend', newClass: 'h-[40%]', resolvedClass: 'h-[62%]' },
   { label: 'VIBE', newClass: 'h-[58%]', resolvedClass: 'h-[36%]' },
   { label: 'Offer', newClass: 'h-[76%]', resolvedClass: 'h-[88%]' },

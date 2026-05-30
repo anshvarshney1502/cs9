@@ -1,10 +1,11 @@
-import { Briefcase, LayoutGrid, MessageSquare, PanelLeftClose, Settings } from 'lucide-react'
+import { Zap, LayoutGrid, MessageSquare, PanelLeftClose, Settings, User } from 'lucide-react'
 
 const navItems = [
   { id: 'dashboard', label: 'Dashboard', Icon: LayoutGrid },
   { id: 'queriesManagement', label: 'Queries', Icon: MessageSquare },
-  { id: 'spurtiManagement', label: 'Spurti', Icon: Briefcase },
+  { id: 'sparkLeaderboard', label: 'Spark', Icon: Zap },
   { id: 'faqManagement', label: 'FAQ', Icon: Settings },
+  { id: 'adminProfile', label: 'Profile', Icon: User },
 ]
 
 function AdminLeftPane({ currentView, onNavigate }) {

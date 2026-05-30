@@ -6,7 +6,8 @@ import AdminLeftPane from './components/LeftPane/AdminLeftPane'
 import DashboardView from './pages/Dashboard'
 import FAQManagementView from './pages/FAQManagement'
 import QueriesManagementView from './pages/QueriesManagement'
-import SpurtiManagementView from './pages/SpurtiManagement'
+import SparkLeaderboardView from './pages/SparkLeaderboard'
+import AdminProfileView from './pages/AdminProfile'
 import {
   fetchAdminDashboard,
   fetchAdminNotifications,
@@ -146,8 +147,9 @@ function AdminHome() {
 
         {currentAdminView === 'dashboard' && <DashboardView {...viewProps} />}
         {currentAdminView === 'queriesManagement' && <QueriesManagementView {...viewProps} />}
-        {currentAdminView === 'spurtiManagement' && <SpurtiManagementView {...viewProps} />}
+        {currentAdminView === 'sparkLeaderboard' && <SparkLeaderboardView {...viewProps} />}
         {currentAdminView === 'faqManagement' && <FAQManagementView {...viewProps} />}
+        {currentAdminView === 'adminProfile' && <AdminProfileView user={user} />}
       </main>
     </div>
   )
