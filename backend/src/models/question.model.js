@@ -209,16 +209,22 @@ questionSchema.post('save', function (doc) {
   }
 })
 
-questionSchema.post('updateOne', async function () {
-  try {
-    const query = this.getQuery()
-    const doc = await this.model.findOne(query)
-    if (doc) {
-      sendToAll('question_updated', { question_id: doc.question_id, status: doc.status })
-    }
-  } catch (err) {
-    console.error('Error in question post-updateOne hook:', err)
-  }
+questionSchema.post('updateOne', function () {
+  const query = this.getQuery()
+  this.model.findOne(query)
+    .then((doc) => {
+      if (doc) {
+        sendToAll('question_updated', {
+          question_id: doc.question_id,
+          status: doc.status,
+          upvotes: doc.upvotes,
+          action: 'vote',
+        })
+      }
+    })
+    .catch((err) => {
+      console.error('Error in question post-updateOne hook:', err)
+    })
 })
 
 export default mongoose.model('Question', questionSchema)

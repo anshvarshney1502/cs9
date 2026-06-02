@@ -167,16 +167,17 @@ commentSchema.post('save', function (doc) {
   }
 })
 
-commentSchema.post('updateOne', async function () {
-  try {
-    const query = this.getQuery()
-    const doc = await this.model.findOne(query)
-    if (doc) {
-      sendToAll('comment_updated', { question_id: doc.question_id, comment_id: doc.comment_id })
-    }
-  } catch (err) {
-    console.error('Error in comment post-updateOne hook:', err)
-  }
+commentSchema.post('updateOne', function () {
+  const query = this.getQuery()
+  this.model.findOne(query)
+    .then((doc) => {
+      if (doc) {
+        sendToAll('comment_updated', { question_id: doc.question_id, comment_id: doc.comment_id })
+      }
+    })
+    .catch((err) => {
+      console.error('Error in comment post-updateOne hook:', err)
+    })
 })
 
 export default mongoose.model('Comment', commentSchema)

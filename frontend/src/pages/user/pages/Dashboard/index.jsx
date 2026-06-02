@@ -102,8 +102,10 @@ function DashboardPage() {
   // Refresh dashboard list and counts in real-time when updates occur
   useEffect(() => {
     function handleRealtimeUpdate(e) {
-      const { type } = e.detail
-      if (type === 'question_updated' || type === 'answer_updated' || type === 'comment_updated') {
+      const { type, data: eventData } = e.detail
+      if (type === 'question_updated' && eventData.action === 'vote') {
+        setQueries(prev => prev.map(q => q.id === eventData.question_id ? { ...q, upvotes: eventData.upvotes } : q))
+      } else if (type === 'question_updated' || type === 'answer_updated' || type === 'comment_updated') {
         loadQuestions(true)
 
         const my = sidebarNav === 'My Queries'

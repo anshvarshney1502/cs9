@@ -69,11 +69,38 @@ function QueryDetailPage() {
   useEffect(() => {
     function handleRealtimeUpdate(e) {
       const { type, data: eventData } = e.detail
-      if (
-        (type === 'answer_updated' || type === 'comment_updated' || type === 'question_updated') &&
-        eventData.question_id === queryId
-      ) {
-        refresh()
+      if (eventData.question_id === queryId) {
+        if (type === 'answer_updated' && eventData.action === 'vote') {
+          setData(prev => {
+            if (!prev) return prev
+            return {
+              ...prev,
+              answers: prev.answers.map(ans =>
+                ans.answer_id === eventData.answer_id
+                  ? {
+                      ...ans,
+                      score: eventData.score,
+                      upvotes: eventData.upvotes,
+                      downvotes: eventData.downvotes,
+                    }
+                  : ans
+              )
+            }
+          })
+        } else if (type === 'question_updated' && eventData.action === 'vote') {
+          setData(prev => {
+            if (!prev) return prev
+            return {
+              ...prev,
+              question: {
+                ...prev.question,
+                upvotes: eventData.upvotes
+              }
+            }
+          })
+        } else if (type === 'answer_updated' || type === 'comment_updated' || type === 'question_updated') {
+          refresh()
+        }
       }
     }
 
