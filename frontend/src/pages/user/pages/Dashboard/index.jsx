@@ -53,8 +53,8 @@ function DashboardPage() {
   }, [user?.userId])
 
   // ── Load questions ─────────────────────────────────────────────────────────
-  const loadQuestions = useCallback(async () => {
-    setLoadingQueries(true)
+  const loadQuestions = useCallback(async (silent = false) => {
+    if (!silent) setLoadingQueries(true)
     try {
       const sort         = activeTab === 'Trending' ? 'trending' : 'latest'
       const status       = activeTab === 'Unanswered' ? 'unanswered'
@@ -77,11 +77,11 @@ function DashboardPage() {
     } catch {
       setQueries([])
     } finally {
-      setLoadingQueries(false)
+      if (!silent) setLoadingQueries(false)
     }
   }, [activeTab, sidebarNav, searchQuery, selectedTags, user?.userId])
 
-  useEffect(() => { loadQuestions() }, [loadQuestions])
+  useEffect(() => { loadQuestions(false) }, [loadQuestions])
 
   // ── Load counts ────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -98,6 +98,34 @@ function DashboardPage() {
       })
       .catch(() => {})
   }, [sidebarNav, searchQuery, selectedTags])
+
+  // Refresh dashboard list and counts in real-time when updates occur
+  useEffect(() => {
+    function handleRealtimeUpdate(e) {
+      const { type } = e.detail
+      if (type === 'question_updated' || type === 'answer_updated' || type === 'comment_updated') {
+        loadQuestions(true)
+
+        const my = sidebarNav === 'My Queries'
+        fetchQuestionCounts({
+          search: searchQuery,
+          tag: selectedTags.join(','),
+          my,
+        })
+          .then(data => {
+            if (data.success && data.counts) {
+              setCounts(data.counts)
+            }
+          })
+          .catch(() => {})
+      }
+    }
+
+    window.addEventListener('realtime-update', handleRealtimeUpdate)
+    return () => {
+      window.removeEventListener('realtime-update', handleRealtimeUpdate)
+    }
+  }, [loadQuestions, sidebarNav, searchQuery, selectedTags])
 
   // ── Upvote ─────────────────────────────────────────────────────────────────
   async function handleUpvote(id) {
