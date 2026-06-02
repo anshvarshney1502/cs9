@@ -24,7 +24,45 @@ function initialsOf(name = '') {
 }
 
 function fmtDate(d) {
-  return d ? new Date(d).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : ''
+  if (!d) return ''
+  const date = new Date(d)
+
+  const formatter = new Intl.DateTimeFormat('en-IN', {
+    timeZone: 'Asia/Kolkata',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  })
+
+  const parts = formatter.formatToParts(date)
+  const dateKey = parts.find(p => p.type === 'day').value + '/' + parts.find(p => p.type === 'month').value + '/' + parts.find(p => p.type === 'year').value
+
+  const todayParts = formatter.formatToParts(new Date())
+  const todayKey = todayParts.find(p => p.type === 'day').value + '/' + todayParts.find(p => p.type === 'month').value + '/' + todayParts.find(p => p.type === 'year').value
+
+  const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000)
+  const yesterdayParts = formatter.formatToParts(yesterday)
+  const yesterdayKey = yesterdayParts.find(p => p.type === 'day').value + '/' + yesterdayParts.find(p => p.type === 'month').value + '/' + yesterdayParts.find(p => p.type === 'year').value
+
+  const timeStr = date.toLocaleTimeString('en-IN', {
+    timeZone: 'Asia/Kolkata',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false
+  })
+
+  if (dateKey === todayKey) {
+    return `Today at ${timeStr}`
+  } else if (dateKey === yesterdayKey) {
+    return `Yesterday at ${timeStr}`
+  } else {
+    const dateStr = date.toLocaleDateString('en-IN', {
+      timeZone: 'Asia/Kolkata',
+      day: 'numeric',
+      month: 'short'
+    })
+    return `${dateStr} at ${timeStr}`
+  }
 }
 
 function QueryDetailPage() {
