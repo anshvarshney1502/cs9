@@ -105,6 +105,19 @@ function DashboardPage() {
       const { type, data: eventData } = e.detail
       if (type === 'question_updated' && eventData.action === 'vote') {
         setQueries(prev => prev.map(q => q.id === eventData.question_id ? { ...q, upvotes: eventData.upvotes } : q))
+
+        const my = sidebarNav === 'My Queries'
+        fetchQuestionCounts({
+          search: searchQuery,
+          tag: selectedTags.join(','),
+          my,
+        })
+          .then(data => {
+            if (data.success && data.counts) {
+              setCounts(data.counts)
+            }
+          })
+          .catch(() => {})
       } else if (type === 'question_updated' || type === 'answer_updated' || type === 'comment_updated') {
         loadQuestions(true)
 

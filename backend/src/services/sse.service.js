@@ -56,19 +56,20 @@ export function sendToAll(eventName, data) {
  * SSE controller to handle connection registration
  */
 export function sseHandler(req, res) {
+  console.log('[SSE] Connection request received, user:', req.user?.userId)
   const userId = req.user?.userId
   if (!userId) {
+    console.log('[SSE] Connection rejected: unauthorized')
     res.status(401).end()
     return
   }
 
   // Set headers for SSE stream
-  res.writeHead(200, {
-    'Content-Type': 'text/event-stream',
-    'Cache-Control': 'no-cache',
-    'Connection': 'keep-alive',
-    'X-Accel-Buffering': 'no', // Disable Nginx buffering
-  })
+  res.setHeader('Content-Type', 'text/event-stream')
+  res.setHeader('Cache-Control', 'no-cache')
+  res.setHeader('Connection', 'keep-alive')
+  res.setHeader('X-Accel-Buffering', 'no') // Disable Nginx buffering
+  res.flushHeaders()
 
   // Send initial establish comment to keep the connection alive
   res.write(': ok\n\n')
