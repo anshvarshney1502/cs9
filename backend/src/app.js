@@ -17,6 +17,7 @@ import notificationRoutes from './routes/notification.routes.js'
 import profileRoutes from './routes/profile.routes.js'
 import questionRoutes from './routes/question.routes.js'
 import resolverRoutes from './routes/resolver.routes.js'
+import realtimeRoutes from './routes/realtime.routes.js'
 import sparkRoutes from './routes/spark.routes.js'
 import userRoutes from './routes/user.routes.js'
 
@@ -130,6 +131,7 @@ app.use('/api/sparks', sparkRoutes)
 app.use('/api/leaderboard', leaderboardRoutes)
 app.use('/api/resolver', resolverRoutes)
 app.use('/api/moderation', moderationRoutes)
+app.use('/api/realtime', realtimeRoutes)
 
 app.use(notFound)
 app.use(errorHandler)

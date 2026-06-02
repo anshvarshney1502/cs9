@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import mongoose from 'mongoose'
+import { sendToAll } from '../services/sse.service.js'
 
 /**
  * answers
@@ -180,5 +181,25 @@ const answerSchema = new mongoose.Schema(
 answerSchema.index({ question_id: 1, is_accepted: -1, score: -1, created_at: 1 })
 answerSchema.index({ question_id: 1, is_official: 1 })
 answerSchema.index({ question_id: 1, created_at: -1 })
+
+answerSchema.post('save', function (doc) {
+  try {
+    sendToAll('answer_updated', { question_id: doc.question_id, answer_id: doc.answer_id })
+  } catch (err) {
+    console.error('Error in answer post-save hook:', err)
+  }
+})
+
+answerSchema.post('updateOne', async function () {
+  try {
+    const query = this.getQuery()
+    const doc = await this.model.findOne(query)
+    if (doc) {
+      sendToAll('answer_updated', { question_id: doc.question_id, answer_id: doc.answer_id })
+    }
+  } catch (err) {
+    console.error('Error in answer post-updateOne hook:', err)
+  }
+})
 
 export default mongoose.model('Answer', answerSchema)

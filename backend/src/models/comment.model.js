@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import mongoose from 'mongoose'
+import { sendToAll } from '../services/sse.service.js'
 
 /**
  * comments
@@ -157,5 +158,25 @@ commentSchema.index({ answer_id: 1, parent_id: 1, created_at: 1 })
 
 // Load an entire sub-thread.
 commentSchema.index({ root_comment_id: 1, depth: 1, created_at: 1 })
+
+commentSchema.post('save', function (doc) {
+  try {
+    sendToAll('comment_updated', { question_id: doc.question_id, comment_id: doc.comment_id })
+  } catch (err) {
+    console.error('Error in comment post-save hook:', err)
+  }
+})
+
+commentSchema.post('updateOne', async function () {
+  try {
+    const query = this.getQuery()
+    const doc = await this.model.findOne(query)
+    if (doc) {
+      sendToAll('comment_updated', { question_id: doc.question_id, comment_id: doc.comment_id })
+    }
+  } catch (err) {
+    console.error('Error in comment post-updateOne hook:', err)
+  }
+})
 
 export default mongoose.model('Comment', commentSchema)

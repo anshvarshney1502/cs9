@@ -65,6 +65,24 @@ function QueryDetailPage() {
 
   useEffect(() => { load() }, [load])
 
+  // Refresh query thread in real-time when updates occur
+  useEffect(() => {
+    function handleRealtimeUpdate(e) {
+      const { type, data: eventData } = e.detail
+      if (
+        (type === 'answer_updated' || type === 'comment_updated' || type === 'question_updated') &&
+        eventData.question_id === queryId
+      ) {
+        refresh()
+      }
+    }
+
+    window.addEventListener('realtime-update', handleRealtimeUpdate)
+    return () => {
+      window.removeEventListener('realtime-update', handleRealtimeUpdate)
+    }
+  }, [queryId, refresh])
+
   // ── Related recent queries sharing the same tags ────────────────────────────
   const tags = data?.question?.tags || []
   const tagKey = tags.join(',')

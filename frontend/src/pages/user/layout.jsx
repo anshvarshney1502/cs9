@@ -72,6 +72,68 @@ function UserLayout() {
     }
   }, [user?.userId, location.pathname])
 
+  // Real-time updates via SSE
+  useEffect(() => {
+    if (!user?.userId) return
+
+    const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '')
+    const sseUrl = `${API_BASE_URL}/api/realtime/stream`
+
+    let eventSource
+    let reconnectTimeout
+
+    function connect() {
+      eventSource = new EventSource(sseUrl, { withCredentials: true })
+
+      eventSource.addEventListener('notification_created', (event) => {
+        try {
+          const newNotif = JSON.parse(event.data)
+          setNotifications((prev) => {
+            if (prev.some((n) => n.notification_id === newNotif.notification_id)) {
+              return prev
+            }
+            return [newNotif, ...prev]
+          })
+          setUnreadCount((prev) => prev + 1)
+        } catch (err) {
+          console.error('Failed to parse SSE notification:', err)
+        }
+      })
+
+      const genericEvents = ['answer_updated', 'comment_updated', 'question_updated']
+      genericEvents.forEach((eventName) => {
+        eventSource.addEventListener(eventName, (event) => {
+          try {
+            const data = JSON.parse(event.data)
+            const customEvent = new CustomEvent('realtime-update', {
+              detail: { type: eventName, data },
+            })
+            window.dispatchEvent(customEvent)
+          } catch (err) {
+            console.error(`Failed to parse SSE event ${eventName}:`, err)
+          }
+        })
+      })
+
+      eventSource.onerror = (err) => {
+        console.warn('SSE connection lost, reconnecting...', err)
+        eventSource.close()
+        reconnectTimeout = setTimeout(connect, 5000)
+      }
+    }
+
+    connect()
+
+    return () => {
+      if (eventSource) {
+        eventSource.close()
+      }
+      if (reconnectTimeout) {
+        clearTimeout(reconnectTimeout)
+      }
+    }
+  }, [user?.userId])
+
 
   async function handleLogout() {
     try {

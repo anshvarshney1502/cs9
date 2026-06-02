@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import mongoose from 'mongoose'
+import { sendToAll } from '../services/sse.service.js'
 
 /**
  * questions
@@ -197,6 +198,26 @@ questionSchema.index(
 questionSchema.pre('save', function () {
   if (this.isModified('body')) {
     this.body = this.body.replace(/\s+/g, ' ').trim()
+  }
+})
+
+questionSchema.post('save', function (doc) {
+  try {
+    sendToAll('question_updated', { question_id: doc.question_id, status: doc.status })
+  } catch (err) {
+    console.error('Error in question post-save hook:', err)
+  }
+})
+
+questionSchema.post('updateOne', async function () {
+  try {
+    const query = this.getQuery()
+    const doc = await this.model.findOne(query)
+    if (doc) {
+      sendToAll('question_updated', { question_id: doc.question_id, status: doc.status })
+    }
+  } catch (err) {
+    console.error('Error in question post-updateOne hook:', err)
   }
 })
 

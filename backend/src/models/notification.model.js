@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import mongoose from 'mongoose'
+import { sendToUser } from '../services/sse.service.js'
 
 const notificationSchema = new mongoose.Schema(
   {
@@ -66,5 +67,13 @@ const notificationSchema = new mongoose.Schema(
 
 notificationSchema.index({ recipient_id: 1, is_read: 1 })
 notificationSchema.index({ recipient_id: 1, created_at: -1 })
+
+notificationSchema.post('save', function (doc) {
+  try {
+    sendToUser(doc.recipient_id, 'notification_created', doc)
+  } catch (err) {
+    console.error('Error in notification post-save hook:', err)
+  }
+})
 
 export default mongoose.model('Notification', notificationSchema)

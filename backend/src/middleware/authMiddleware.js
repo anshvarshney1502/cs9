@@ -12,6 +12,11 @@ const getTokenFromRequest = (req) => {
     }
   }
 
+  // Check query parameter (useful for EventSource / SSE)
+  if (req.query && req.query.token) {
+    return req.query.token
+  }
+
   // Fall back to HTTP-only cookie (browser sessions)
   const cookieHeader = req.headers.cookie
 
