@@ -137,7 +137,7 @@ function DashboardPage() {
         {/* Tabs — hidden in My Queries */}
         {sidebarNav !== 'My Queries' && (
           <div className="mb-6 flex items-center border-b border-border pb-4">
-            <div className="flex gap-7">
+            <div data-tour="tabs-filter" className="flex gap-7">
               {['All Queries', 'Trending', 'Recent', 'Unanswered', 'Resolved'].map(tab => (
                 <button
                   key={tab}
@@ -203,7 +203,7 @@ function DashboardPage() {
         />
 
         {/* Your Contribution */}
-        <div className="rounded-xl border border-border bg-bg-card p-6">
+        <div data-tour="contributions-widget" className="rounded-xl border border-border bg-bg-card p-6">
           <div className="mb-6 flex items-center gap-3">
             <div className="rounded-md bg-brand p-1.5 text-white">
               <LinkIcon className="h-5 w-5" strokeWidth={1.8} />

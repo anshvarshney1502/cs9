@@ -46,6 +46,7 @@ const QuestionCard: FC<QuestionCardProps> = ({ query, onUpvote, onClick }) => {
     >
       {/* Upvote */}
       <button
+        data-tour="upvote-btn"
         type="button"
         onClick={(e) => { e.stopPropagation(); onUpvote(query.id) }}
         className="mr-5 flex h-[60px] min-w-[60px] cursor-pointer flex-col items-center justify-center rounded-lg text-[18px] font-bold transition-all"

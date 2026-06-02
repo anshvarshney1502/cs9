@@ -3,7 +3,7 @@ import {
   Popover, PopoverButton, PopoverPanel,
   Menu, MenuButton, MenuItems, MenuItem,
 } from '@headlessui/react'
-import { Settings, Search, SlidersHorizontal, PlusCircle, Bell, LogOut, Moon, Sun, Tag } from 'lucide-react'
+import { Settings, Search, SlidersHorizontal, PlusCircle, Bell, LogOut, Moon, Sun, Tag, HelpCircle } from 'lucide-react'
 import { timeAgo } from '../../service'
 import Button from '../../../../components/Button/Button'
 
@@ -39,6 +39,7 @@ function DashboardHeader({
   onDarkToggle,
   onProfileSettings,
   onLogout,
+  onStartTour,
   tags = [],
   selectedTags = [],
   onTagsChange,
@@ -65,7 +66,7 @@ function DashboardHeader({
 
       <div className="min-w-0 flex-1">
         {showSearch && (
-          <div className="relative flex w-[420px] items-center gap-2 rounded-lg bg-bg-tertiary px-3 py-2 transition hover:bg-bg-tertiary">
+          <div data-tour="search-bar" className="relative flex w-[420px] items-center gap-2 rounded-lg bg-bg-tertiary px-3 py-2 transition hover:bg-bg-tertiary">
             <Search className="h-4 w-4 shrink-0 text-text-muted" strokeWidth={1.8} />
 
             <input
@@ -161,6 +162,7 @@ function DashboardHeader({
       <div className="flex items-center gap-6">
         {showRaiseQuery && (
           <Button
+            data-tour="raise-query-btn"
             variant="secondary"
             className="min-h-7 gap-1 rounded-lg border-transparent bg-brand/80 px-2.5 py-1 font-bold uppercase tracking-wide text-white hover:border-transparent hover:bg-brand-hover"
             onClick={onRaiseQuery}
@@ -245,6 +247,15 @@ function DashboardHeader({
                 onClick={onProfileSettings}
               >
                 <Settings className="h-3.5 w-3.5" strokeWidth={1.8} /> <span className="text-[13px] font-medium capitalize">Profile Settings</span>
+              </button>
+            </MenuItem>
+            <MenuItem>
+              <button
+                type="button"
+                className="flex w-full items-center gap-2 px-3 py-2 text-[11px] font-medium text-text-secondary transition data-focus:bg-bg-tertiary"
+                onClick={onStartTour}
+              >
+                <HelpCircle className="h-3.5 w-3.5" strokeWidth={1.8} /> <span className="text-[13px] font-medium">Product Tour</span>
               </button>
             </MenuItem>
             <div className="h-px bg-border" />
