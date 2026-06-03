@@ -6,7 +6,7 @@ import tailwindcss from '@tailwindcss/vite'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-const apiProxyTarget = process.env.VITE_API_PROXY_TARGET || 'http://localhost:5000'
+const apiProxyTarget = process.env.VITE_API_PROXY_TARGET || 'http://localhost:5001'
 const configDir = path.dirname(fileURLToPath(import.meta.url))
 
 // Single source of truth for project metadata lives in ../project.yml.
