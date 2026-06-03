@@ -150,11 +150,11 @@ const styleContent = `
   @keyframes tourFadeIn {
     from {
       opacity: 0;
-      transform: scale(0.95) translateY(10px);
+      transform: scale(0.95);
     }
     to {
       opacity: 1;
-      transform: scale(1) translateY(0);
+      transform: scale(1);
     }
   }
 
@@ -190,7 +190,11 @@ const styleContent = `
 function AdminOnboardingTour({ userId, isActive, onClose }) {
   const [step, setStep] = useState(0)
   const [rect, setRect] = useState(null)
-  const [tooltipStyle, setTooltipStyle] = useState({})
+  const [tooltipStyle, setTooltipStyle] = useState({
+    top: '50%',
+    left: '50%',
+    transform: 'translate(-50%, -50%)',
+  })
 
   // Reset to first step when tour becomes active
   useEffect(() => {
@@ -206,12 +210,9 @@ function AdminOnboardingTour({ userId, isActive, onClose }) {
     if (!currentStep.selector) {
       setRect(null)
       setTooltipStyle({
-        position: 'fixed',
         top: '50%',
         left: '50%',
         transform: 'translate(-50%, -50%)',
-        zIndex: 10000,
-        transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
       })
       return
     }
@@ -219,54 +220,49 @@ function AdminOnboardingTour({ userId, isActive, onClose }) {
     const updatePosition = () => {
       const element = document.querySelector(currentStep.selector)
       if (element) {
-        // Scroll the element into view smoothly if it's not visible
-        element.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+        // Scroll the element into the center of the viewport instantly to guarantee stable layout and plenty of space above/below
+        element.scrollIntoView({ block: 'center', behavior: 'auto' })
 
-        // Wait slightly for scroll to complete before getting client rect
-        setTimeout(() => {
-          const r = element.getBoundingClientRect()
-          setRect(r)
+        const r = element.getBoundingClientRect()
+        setRect(r)
 
-          const spaceBelow = window.innerHeight - r.bottom
-          const spaceAbove = r.top
-          let tooltipTop = 0
-          let tooltipLeft = r.left + r.width / 2 - 175 // Center 350px tooltip horizontally
+        const spaceBelow = window.innerHeight - r.bottom
+        const spaceAbove = r.top
+        let tooltipTop = 0
+        let tooltipLeft = r.left + r.width / 2 - 175 // Center 350px tooltip horizontally
 
-          // Clamp left position to viewport boundaries
-          tooltipLeft = Math.max(16, Math.min(window.innerWidth - 366, tooltipLeft))
+        // Clamp left position to viewport boundaries
+        tooltipLeft = Math.max(16, Math.min(window.innerWidth - 366, tooltipLeft))
 
-          if (spaceBelow > 260 || spaceBelow > spaceAbove) {
-            // Position below target
-            tooltipTop = r.bottom + 16
-          } else {
-            // Position above target
-            tooltipTop = r.top - 240 // Assumed tooltip height is ~220px
-          }
+        let tooltipTransform = 'none'
+        if (spaceBelow > 260 || spaceBelow > spaceAbove) {
+          // Position below target
+          tooltipTop = r.bottom + 12
+          tooltipTransform = 'none'
+        } else {
+          // Position above target
+          tooltipTop = r.top - 12
+          tooltipTransform = 'translateY(-100%)'
+        }
 
-          setTooltipStyle({
-            position: 'fixed',
-            top: `${tooltipTop}px`,
-            left: `${tooltipLeft}px`,
-            zIndex: 10000,
-            transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
-          })
-        }, 100)
+        setTooltipStyle({
+          top: `${tooltipTop}px`,
+          left: `${tooltipLeft}px`,
+          transform: tooltipTransform,
+        })
       } else {
         // Fallback to center if element is not in DOM
         setRect(null)
         setTooltipStyle({
-          position: 'fixed',
           top: '50%',
           left: '50%',
           transform: 'translate(-50%, -50%)',
-          zIndex: 10000,
-          transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
         })
       }
     }
 
     // Delay slightly to ensure DOM is ready
-    const timer = setTimeout(updatePosition, 150)
+    const timer = setTimeout(updatePosition, 100)
     window.addEventListener('resize', updatePosition)
     window.addEventListener('scroll', updatePosition, true)
 
@@ -329,81 +325,91 @@ function AdminOnboardingTour({ userId, isActive, onClose }) {
         />
       )}
 
-      {/* Tooltip Card */}
+      {/* Tooltip Card wrapper to handle outer coordinates/translations */}
       <div
-        className="tour-animate-card w-[350px] rounded-2xl border border-border-light bg-bg-card/95 p-6 shadow-2xl backdrop-blur-lg dark:border-border/40 dark:bg-bg-card/90"
-        style={tooltipStyle}
+        style={{
+          position: 'fixed',
+          top: tooltipStyle.top,
+          left: tooltipStyle.left,
+          transform: tooltipStyle.transform,
+          zIndex: 10000,
+          width: '350px',
+          transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+        }}
       >
-        {/* Top Progress Line */}
-        <div className="absolute left-0 top-0 h-1.5 w-full overflow-hidden rounded-t-2xl bg-bg-tertiary">
-          <div
-            className="h-full bg-gradient-to-r from-brand to-brand-hover transition-all duration-300"
-            style={{ width: `${progressPercent}%` }}
-          />
-        </div>
-
-        {/* Step Header */}
-        <div className="mt-1 flex items-start gap-4">
-          {/* Animated Icon Container */}
-          <div className="tour-float-icon flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-brand/10 text-brand">
-            {currentStep.icon}
+        {/* Inner card with CSS animation (no transform collisions) */}
+        <div className="tour-animate-card rounded-2xl border border-border-light bg-bg-card/95 p-6 shadow-2xl backdrop-blur-lg dark:border-border/40 dark:bg-bg-card/90">
+          {/* Top Progress Line */}
+          <div className="absolute left-0 top-0 h-1.5 w-full overflow-hidden rounded-t-2xl bg-bg-tertiary">
+            <div
+              className="h-full bg-gradient-to-r from-brand to-brand-hover transition-all duration-300"
+              style={{ width: `${progressPercent}%` }}
+            />
           </div>
 
-          <div className="flex-1">
-            <h4 className="font-sans text-[16px] font-extrabold leading-tight text-text-primary">
-              {currentStep.title}
-            </h4>
-            <p className="mt-0.5 text-[10px] font-bold uppercase tracking-wider text-brand">
-              {currentStep.subtitle}
-            </p>
+          {/* Step Header */}
+          <div className="mt-1 flex items-start gap-4">
+            {/* Animated Icon Container */}
+            <div className="tour-float-icon flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-brand/10 text-brand">
+              {currentStep.icon}
+            </div>
+
+            <div className="flex-1">
+              <h4 className="font-sans text-[16px] font-extrabold leading-tight text-text-primary">
+                {currentStep.title}
+              </h4>
+              <p className="mt-0.5 text-[10px] font-bold uppercase tracking-wider text-brand">
+                {currentStep.subtitle}
+              </p>
+            </div>
           </div>
-        </div>
 
-        {/* Divider */}
-        <div className="my-4 h-px bg-border-light dark:bg-border/30" />
+          {/* Divider */}
+          <div className="my-4 h-px bg-border-light dark:bg-border/30" />
 
-        {/* Body Text */}
-        <p className="text-[13px] leading-5 text-text-secondary">
-          {currentStep.body}
-        </p>
+          {/* Body Text */}
+          <p className="text-[13px] leading-5 text-text-secondary">
+            {currentStep.body}
+          </p>
 
-        {/* Progress Bar & Buttons */}
-        <div className="mt-6 flex items-center justify-between">
-          {/* Skip Link */}
-          <button
-            type="button"
-            onClick={handleFinish}
-            className="text-[12px] font-bold text-text-muted hover:text-brand transition duration-200"
-          >
-            Skip Tour
-          </button>
-
-          {/* Controls */}
-          <div className="flex items-center gap-3">
-            {/* Step Count */}
-            <span className="rounded-md bg-bg-tertiary px-2 py-1 text-[11px] font-bold text-text-secondary">
-              {step + 1} / {tourSteps.length}
-            </span>
-
-            {/* Back Button */}
-            {!isFirst && (
-              <button
-                type="button"
-                onClick={handlePrev}
-                className="rounded-lg border border-border-light bg-bg-secondary px-3 py-1.5 text-[12px] font-bold text-text-secondary hover:bg-bg-tertiary transition duration-200 dark:border-border/40"
-              >
-                Back
-              </button>
-            )}
-
-            {/* Next/Finish Button */}
+          {/* Progress Bar & Buttons */}
+          <div className="mt-6 flex items-center justify-between">
+            {/* Skip Link */}
             <button
               type="button"
-              onClick={handleNext}
-              className="rounded-lg bg-gradient-to-r from-brand to-brand-hover px-4 py-1.5 text-[12px] font-extrabold text-white shadow-sm hover:brightness-110 active:scale-95 transition duration-200"
+              onClick={handleFinish}
+              className="text-[12px] font-bold text-text-muted hover:text-brand transition duration-200"
             >
-              {isLast ? 'Finish 🏁' : 'Next'}
+              Skip Tour
             </button>
+
+            {/* Controls */}
+            <div className="flex items-center gap-3">
+              {/* Step Count */}
+              <span className="rounded-md bg-bg-tertiary px-2 py-1 text-[11px] font-bold text-text-secondary">
+                {step + 1} / {tourSteps.length}
+              </span>
+
+              {/* Back Button */}
+              {!isFirst && (
+                <button
+                  type="button"
+                  onClick={handlePrev}
+                  className="rounded-lg border border-border-light bg-bg-secondary px-3 py-1.5 text-[12px] font-bold text-text-secondary hover:bg-bg-tertiary transition duration-200 dark:border-border/40"
+                >
+                  Back
+                </button>
+              )}
+
+              {/* Next/Finish Button */}
+              <button
+                type="button"
+                onClick={handleNext}
+                className="rounded-lg bg-gradient-to-r from-brand to-brand-hover px-4 py-1.5 text-[12px] font-extrabold text-white shadow-sm hover:brightness-110 active:scale-95 transition duration-200"
+              >
+                {isLast ? 'Finish 🏁' : 'Next'}
+              </button>
+            </div>
           </div>
         </div>
       </div>
