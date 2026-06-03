@@ -168,6 +168,16 @@ export async function deleteComment(commentId) {
 
 
 
+export async function updateAnswer(answerId, body) {
+  const { data } = await axisPrivate().patch(`/api/answers/${answerId}`, { body })
+  return data
+}
+
+export async function deleteAnswer(answerId) {
+  const { data } = await axisPrivate().delete(`/api/answers/${answerId}`)
+  return data
+}
+
 export async function reportContent({ targetType, targetId, reason, description }) {
   const { data } = await axisPrivate().post('/api/flags', {
     targetType, targetId, reason, description,
