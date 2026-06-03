@@ -728,7 +728,7 @@ function ThreadItem({
                         className="flex items-center gap-1.5 rounded-lg border border-border-light bg-bg-secondary px-2.5 py-1 text-[11px] font-semibold text-text-secondary transition-all duration-200 hover:border-brand hover:text-brand hover:bg-brand/5 shadow-xs cursor-pointer"
                       >
                         <Pencil className="h-3.5 w-3.5 text-text-muted transition-colors hover:text-brand" strokeWidth={1.8} />
-                        <span className="leading-none">EDIT</span>
+                        <span className="leading-none">Edit</span>
                       </button>
                     )}
                     <button
@@ -737,7 +737,7 @@ function ThreadItem({
                       className="flex items-center gap-1.5 rounded-lg border border-border-light bg-bg-secondary px-2.5 py-1 text-[11px] font-semibold text-text-secondary transition-all duration-200 hover:border-danger hover:text-danger hover:bg-danger/5 shadow-xs cursor-pointer"
                     >
                       <Trash2 className="h-3.5 w-3.5 text-text-muted transition-colors hover:text-danger" strokeWidth={1.8} />
-                      <span className="leading-none">DELETE</span>
+                      <span className="leading-none">Delete</span>
                     </button>
                   </div>
                 )

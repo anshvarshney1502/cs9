@@ -166,8 +166,6 @@ export async function deleteComment(commentId) {
   return data
 }
 
-
-
 export async function updateAnswer(answerId, body) {
   const { data } = await axisPrivate().patch(`/api/answers/${answerId}`, { body })
   return data
