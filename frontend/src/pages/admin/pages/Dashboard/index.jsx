@@ -125,7 +125,7 @@ function DashboardView({ dashboardData, isLoading, onRefresh, onNavigate }) {
         </div>
       </div>
 
-      <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div data-tour="admin-kpis" className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <MetricCard
           title="Community Queries"
           value={formatNumber(questionMetrics.community)}
@@ -160,7 +160,7 @@ function DashboardView({ dashboardData, isLoading, onRefresh, onNavigate }) {
         />
       </div>
 
-      <section className="mb-8 overflow-hidden rounded-lg border border-border-light bg-bg-card shadow-sm">
+      <section data-tour="admin-unresolved" className="mb-8 overflow-hidden rounded-lg border border-border-light bg-bg-card shadow-sm">
         <div className="flex flex-col gap-3 border-b border-border-light px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h2 className="text-[17px] font-bold text-text-primary">Unresolved Queries</h2>
