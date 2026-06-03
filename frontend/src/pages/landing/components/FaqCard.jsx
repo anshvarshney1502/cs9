@@ -2,9 +2,8 @@ import { ChevronDown } from 'lucide-react'
 import { parseMarkdown } from '../../../lib/markdown'
 
 function getQuestionLabel(faq) {
-  const category = String(faq.category || '').trim()
-  const hasReadableCategory = /^\d+(\.\d+)?$/.test(category)
-  return hasReadableCategory ? `${category} ${faq.question}` : faq.question
+  const rawQuestion = faq.question || ''
+  return rawQuestion.replace(/^\s*\d+(?:\.\d+)*\s*/, '').trim()
 }
 
 function FaqCard({ faq, sectionId, isOpen, onToggle }) {

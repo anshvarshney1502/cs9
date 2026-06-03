@@ -379,6 +379,8 @@ function QueryDetailPage() {
               date={fmtDate(question.created_at)}
               body={question.body}
               isOriginal
+              moderationState="visible"
+              onReport={() => setReportTarget({ type: 'question', id: question.question_id })}
             />
 
             {/* Answers */}
@@ -558,6 +560,7 @@ function QueryDetailPage() {
       <ReportModal
         open={!!reportTarget}
         submitting={reporting}
+        targetType={reportTarget?.type}
         onClose={() => setReportTarget(null)}
         onSubmit={handleReportSubmit}
       />
@@ -669,31 +672,35 @@ function ThreadItem({
           />
         )}
 
-        {/* Footer (visible answers only) */}
-        {!isOriginal && !hidden && (
+        {/* Footer (visible answers and original question) */}
+        {!hidden && (
           <div className="flex items-center justify-between border-t border-border-light bg-bg-tertiary px-5 py-3">
-            <div className="flex items-center gap-2 text-[14px] font-bold text-text-primary">
-              <button
-                type="button"
-                onClick={onVoteUp}
-                title={myVote === 1 ? 'Remove upvote' : 'Upvote'}
-                className={`transition ${myVote === 1 ? 'text-brand' : 'text-text-muted hover:text-brand'}`}
-              >
-                <ChevronUp className="h-5 w-5" strokeWidth={myVote === 1 ? 3 : 2} />
-              </button>
-              <span className={myVote === 1 ? 'text-brand' : myVote === -1 ? 'text-danger' : ''}>{score}</span>
-              <button
-                type="button"
-                onClick={onVoteDown}
-                title={myVote === -1 ? 'Remove downvote' : 'Downvote'}
-                className={`transition ${myVote === -1 ? 'text-danger' : 'text-text-muted hover:text-danger'}`}
-              >
-                <ChevronDown className="h-5 w-5" strokeWidth={myVote === -1 ? 3 : 2} />
-              </button>
-            </div>
+            {!isOriginal ? (
+              <div className="flex items-center gap-2 text-[14px] font-bold text-text-primary">
+                <button
+                  type="button"
+                  onClick={onVoteUp}
+                  title={myVote === 1 ? 'Remove upvote' : 'Upvote'}
+                  className={`transition ${myVote === 1 ? 'text-brand' : 'text-text-muted hover:text-brand'}`}
+                >
+                  <ChevronUp className="h-5 w-5" strokeWidth={myVote === 1 ? 3 : 2} />
+                </button>
+                <span className={myVote === 1 ? 'text-brand' : myVote === -1 ? 'text-danger' : ''}>{score}</span>
+                <button
+                  type="button"
+                  onClick={onVoteDown}
+                  title={myVote === -1 ? 'Remove downvote' : 'Downvote'}
+                  className={`transition ${myVote === -1 ? 'text-danger' : 'text-text-muted hover:text-danger'}`}
+                >
+                  <ChevronDown className="h-5 w-5" strokeWidth={myVote === -1 ? 3 : 2} />
+                </button>
+              </div>
+            ) : (
+              <div />
+            )}
             <div className="flex items-center gap-4">
               {/* Owner: accept this answer as the resolution */}
-              {canAccept && (
+              {!isOriginal && canAccept && (
                 <button
                   type="button"
                   onClick={onAccept}
@@ -703,29 +710,37 @@ function ThreadItem({
                 </button>
               )}
               {isSelf ? (
-                <div className="flex items-center gap-2">
-                  {isEditable() && (
+                isOriginal ? (
+                  // Edit/delete of the original question is out of scope here;
+                  // keep the report-own-question affordance from the report feature.
+                  <span className="text-[11px] italic text-text-muted">
+                    Cannot report own question
+                  </span>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    {isEditable() && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsEditing(true)
+                          setEditText(body)
+                        }}
+                        className="flex items-center gap-1.5 rounded-lg border border-border-light bg-bg-secondary px-2.5 py-1 text-[11px] font-semibold text-text-secondary transition-all duration-200 hover:border-brand hover:text-brand hover:bg-brand/5 shadow-xs cursor-pointer"
+                      >
+                        <Pencil className="h-3.5 w-3.5 text-text-muted transition-colors hover:text-brand" strokeWidth={1.8} />
+                        <span className="leading-none">EDIT</span>
+                      </button>
+                    )}
                     <button
                       type="button"
-                      onClick={() => {
-                        setIsEditing(true)
-                        setEditText(body)
-                      }}
-                      className="flex items-center gap-1.5 rounded-lg border border-border-light bg-bg-secondary px-2.5 py-1 text-[11px] font-semibold text-text-secondary transition-all duration-200 hover:border-brand hover:text-brand hover:bg-brand/5 shadow-xs cursor-pointer"
+                      onClick={() => setShowDeleteConfirm(true)}
+                      className="flex items-center gap-1.5 rounded-lg border border-border-light bg-bg-secondary px-2.5 py-1 text-[11px] font-semibold text-text-secondary transition-all duration-200 hover:border-danger hover:text-danger hover:bg-danger/5 shadow-xs cursor-pointer"
                     >
-                      <Pencil className="h-3.5 w-3.5 text-text-muted transition-colors hover:text-brand" strokeWidth={1.8} />
-                      <span className="leading-none">EDIT</span>
+                      <Trash2 className="h-3.5 w-3.5 text-text-muted transition-colors hover:text-danger" strokeWidth={1.8} />
+                      <span className="leading-none">DELETE</span>
                     </button>
-                  )}
-                  <button
-                    type="button"
-                    onClick={() => setShowDeleteConfirm(true)}
-                    className="flex items-center gap-1.5 rounded-lg border border-border-light bg-bg-secondary px-2.5 py-1 text-[11px] font-semibold text-text-secondary transition-all duration-200 hover:border-danger hover:text-danger hover:bg-danger/5 shadow-xs cursor-pointer"
-                  >
-                    <Trash2 className="h-3.5 w-3.5 text-text-muted transition-colors hover:text-danger" strokeWidth={1.8} />
-                    <span className="leading-none">DELETE</span>
-                  </button>
-                </div>
+                  </div>
+                )
               ) : authorRole === 'ADMIN' ? (
                 <span className="text-[11px] italic text-text-muted">Cannot report admin</span>
               ) : (
