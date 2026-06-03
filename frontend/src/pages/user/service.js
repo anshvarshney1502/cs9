@@ -156,6 +156,18 @@ export async function postComment(answerId, body, parentId = null) {
   return data
 }
 
+export async function updateComment(commentId, body) {
+  const { data } = await axisPrivate().patch(`/api/comments/${commentId}`, { body })
+  return data
+}
+
+export async function deleteComment(commentId) {
+  const { data } = await axisPrivate().delete(`/api/comments/${commentId}`)
+  return data
+}
+
+
+
 export async function reportContent({ targetType, targetId, reason, description }) {
   const { data } = await axisPrivate().post('/api/flags', {
     targetType, targetId, reason, description,
