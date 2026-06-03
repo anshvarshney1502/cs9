@@ -96,7 +96,7 @@ export async function voteQuestion(questionId) {
 }
 
 export function createDashboardEventSource({ my = false } = {}) {
-  const params = new URLSearchParams({ scope: 'questions' })
+  const params = new URLSearchParams()
   if (my) params.set('my', '1')
 
   return new EventSource(`${API_BASE_URL}/api/dashboard/events?${params}`, {

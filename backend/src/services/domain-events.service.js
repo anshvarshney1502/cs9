@@ -1,6 +1,6 @@
 import { EventEmitter } from 'node:events'
 
-const domainEvents = new EventEmitter()
+const domainEvents = new EventEmitter({ warnAfter: 100 })
 
 export function publishDomainEvent(eventName, payload = {}) {
   domainEvents.emit(eventName, payload)
