@@ -51,6 +51,7 @@ function AdminHeader({
         {/* Notifications bell */}
         <div className="relative">
           <button
+            data-tour="admin-notifications"
             type="button"
             className="relative flex h-9 w-9 items-center justify-center rounded-lg text-text-secondary transition hover:bg-bg-primary hover:text-text-primary focus:outline-none focus:ring-2 focus:ring-text-primary focus:ring-offset-2"
             onClick={() => onNotificationsOpen?.()}
@@ -64,6 +65,7 @@ function AdminHeader({
 
         {/* Dark mode */}
         <button
+          data-tour="admin-theme"
           type="button"
           className="flex h-9 w-9 items-center justify-center rounded-lg text-text-secondary transition hover:bg-bg-primary hover:text-text-primary focus:outline-none focus:ring-2 focus:ring-text-primary focus:ring-offset-2"
           onClick={() => onDarkToggle?.()}
