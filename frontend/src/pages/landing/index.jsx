@@ -345,6 +345,7 @@ function Landing() {
               className="h-10 w-full rounded-lg border border-border bg-bg-card pl-9 pr-4 text-[12px] outline-none transition placeholder:text-text-muted focus:border-text-primary focus:ring-1 focus:ring-text-primary"
               placeholder="Search for questions (e.g., 'stipend', 'selection')..."
               type="search"
+              autoComplete="off"
               value={inputValue}
               onChange={(event) => setInputValue(event.target.value)}
             />

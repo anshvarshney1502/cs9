@@ -30,6 +30,7 @@ function AdminHeader({
             className="min-w-0 flex-1 bg-transparent text-[13px] text-text-primary outline-none placeholder:text-text-muted"
             placeholder="Search queries, FAQs, or status..."
             type="search"
+            autoComplete="off"
             value={searchQuery}
             onChange={(event) => onSearchChange(event.target.value)}
           />
