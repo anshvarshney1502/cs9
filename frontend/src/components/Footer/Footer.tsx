@@ -51,12 +51,7 @@ function Footer() {
             </p>
             <div className="mb-4 inline-flex items-center gap-3 text-[14px] text-text-secondary">
               <Mail className="h-4 w-4 text-text-muted" strokeWidth={2} />
-              <a
-                href="https://mail.google.com/mail/?view=cm&fs=1&to=vled@iitrpr.ac.in"
-                target="_blank"
-                rel="noreferrer"
-                className="transition hover:text-text-primary lowercase"
-              >
+              <a href="mailto:vled@iitrpr.ac.in" className="transition hover:text-text-primary lowercase">
                 vled@iitrpr.ac.in
               </a>
             </div>
