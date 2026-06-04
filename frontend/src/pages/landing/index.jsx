@@ -68,8 +68,16 @@ function Tooltip({ label, children }) {
 function Landing() {
   const [explicitOpenKeys, setExplicitOpenKeys] = useState(new Set())
   const [closedKeys, setClosedKeys] = useState(new Set())
-  const [query, setQuery] = useState('')
+  const [inputValue, setInputValue] = useState('')
+  const [searchQuery, setSearchQuery] = useState('')
   const [activeSectionId, setActiveSectionId] = useState('')
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setSearchQuery(inputValue)
+    }, 150)
+    return () => clearTimeout(timer)
+  }, [inputValue])
   const [pageProgress, setPageProgress] = useState(0)
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false)
   const navigate = useNavigate()
@@ -190,7 +198,7 @@ function Landing() {
   }, [sections])
 
   const visibleSections = useMemo(() => {
-    const normalizedQuery = query.trim().toLowerCase()
+    const normalizedQuery = searchQuery.trim().toLowerCase()
 
     if (!normalizedQuery) {
       return sections
@@ -212,7 +220,7 @@ function Landing() {
         }
       })
       .filter((section) => section.faqs.length > 0)
-  }, [query, sections])
+  }, [searchQuery, sections])
 
   const hasSections = sections.length > 0
   const currentActiveSectionId = activeSectionId || sections[0]?.id || ''
@@ -337,8 +345,8 @@ function Landing() {
               className="h-10 w-full rounded-lg border border-border bg-bg-card pl-9 pr-4 text-[12px] outline-none transition placeholder:text-text-muted focus:border-text-primary focus:ring-1 focus:ring-text-primary"
               placeholder="Search for questions (e.g., 'stipend', 'selection')..."
               type="search"
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
+              value={inputValue}
+              onChange={(event) => setInputValue(event.target.value)}
             />
           </label>
 
@@ -415,6 +423,7 @@ function Landing() {
                           sectionId={section.id}
                           isOpen={isOpen}
                           onToggle={() => toggleFaq(accordionKey)}
+                          searchQuery={searchQuery}
                         />
                       )
                     })}
