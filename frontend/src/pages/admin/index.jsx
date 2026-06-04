@@ -14,6 +14,7 @@ import UserManagementView from './pages/UserManagement'
 import AdminProfileView from './pages/AdminProfile'
 import AdminSettingsView from './pages/Settings'
 import AdminOnboardingTour from './components/OnboardingTour/AdminOnboardingTour'
+import Footer from '../../components/Footer/Footer'
 import {
   ADMIN_ROUTE_PATHS,
   adminPathForQuery,
@@ -232,24 +233,29 @@ function AdminHome() {
           onStartTour={() => setIsTourActive(true)}
         />
 
-        <div className="flex-1 overflow-y-auto">
-          {currentAdminView === 'dashboard' && (
-            <Suspense
-              fallback={<div className="flex-1 p-8 text-[13px] text-text-muted">Loading dashboard…</div>}
-            >
-              <DashboardView {...viewProps} />
-            </Suspense>
-          )}
-          {currentAdminView === 'queriesManagement' && <QueriesManagementView {...viewProps} onOpenQuery={openQuery} />}
-          {currentAdminView === 'queryDetail' && (
-            <AdminQueryDetailView queryId={selectedQueryId} onBack={() => navigateAdmin('queriesManagement')} />
-          )}
-          {currentAdminView === 'flagModeration' && <FlagModerationView {...viewProps} />}
-          {currentAdminView === 'userManagement' && <UserManagementView {...viewProps} />}
-          {currentAdminView === 'sparkLeaderboard' && <SparkLeaderboardView {...viewProps} />}
-          {currentAdminView === 'faqManagement' && <FAQManagementView {...viewProps} />}
-          {currentAdminView === 'settings' && <AdminSettingsView {...viewProps} />}
-          {currentAdminView === 'adminProfile' && <AdminProfileView user={user} />}
+        <div className="flex-1 overflow-y-auto flex flex-col">
+          <div className="flex-1">
+            {currentAdminView === 'dashboard' && (
+              <Suspense
+                fallback={<div className="flex-1 p-8 text-[13px] text-text-muted">Loading dashboard…</div>}
+              >
+                <DashboardView {...viewProps} />
+              </Suspense>
+            )}
+            {currentAdminView === 'queriesManagement' && <QueriesManagementView {...viewProps} onOpenQuery={openQuery} />}
+            {currentAdminView === 'queryDetail' && (
+              <AdminQueryDetailView queryId={selectedQueryId} onBack={() => navigateAdmin('queriesManagement')} />
+            )}
+            {currentAdminView === 'flagModeration' && <FlagModerationView {...viewProps} />}
+            {currentAdminView === 'userManagement' && <UserManagementView {...viewProps} />}
+            {currentAdminView === 'sparkLeaderboard' && <SparkLeaderboardView {...viewProps} />}
+            {currentAdminView === 'faqManagement' && <FAQManagementView {...viewProps} />}
+            {currentAdminView === 'settings' && <AdminSettingsView {...viewProps} />}
+            {currentAdminView === 'adminProfile' && <AdminProfileView user={user} />}
+          </div>
+          <div className="mt-auto">
+            <Footer />
+          </div>
         </div>
       </main>
 
