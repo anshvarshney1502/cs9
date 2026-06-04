@@ -147,10 +147,7 @@ function Landing() {
   })
 
   const sections = isError ? emptySections : faqSections
-  const firstSection = sections[0]
-  const firstFaq = firstSection?.faqs[0]
-  const firstFaqKey = firstSection && firstFaq ? `${firstSection.id}:${firstFaq.id}` : ''
-  const openKeys = new Set(firstFaqKey ? [firstFaqKey] : [])
+  const openKeys = new Set()
   closedKeys.forEach((key) => openKeys.delete(key))
   explicitOpenKeys.forEach((key) => openKeys.add(key))
 
