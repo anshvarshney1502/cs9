@@ -9,14 +9,20 @@ function getQuestionLabel(faq) {
 function highlightText(text, search) {
   if (!search || !search.trim()) return text
   const cleanSearch = search.trim().replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')
-  const regex = new RegExp(`(${cleanSearch})`, 'gi')
+  const useWordBoundary = cleanSearch.length < 3 && /^\w/.test(cleanSearch)
+  const regexStr = useWordBoundary ? `\\b(${cleanSearch})` : `(${cleanSearch})`
+  const regex = new RegExp(regexStr, 'gi')
   return text.replace(regex, '<span class="text-blue-600 bg-blue-50 dark:text-blue-400 dark:bg-blue-950/20 px-0.5 rounded font-semibold">$1</span>')
 }
 
 function highlightHtml(html, search) {
   if (!search || !search.trim()) return html
   const cleanSearch = search.trim().replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')
-  const regex = new RegExp(`(<[^>]*>)|(${cleanSearch})`, 'gi')
+  const useWordBoundary = cleanSearch.length < 3 && /^\w/.test(cleanSearch)
+  const regexStr = useWordBoundary
+    ? `(<[^>]*>)|\\b(${cleanSearch})`
+    : `(<[^>]*>)|(${cleanSearch})`
+  const regex = new RegExp(regexStr, 'gi')
   return html.replace(regex, (match, tag, term) => {
     if (tag) return tag
     return `<span class="text-blue-600 bg-blue-50 dark:text-blue-400 dark:bg-blue-950/20 px-0.5 rounded font-semibold">${term}</span>`
