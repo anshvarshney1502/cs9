@@ -31,6 +31,32 @@ are soft-deleted or under review (bodies are not redacted for admins).
   raw `is_deleted` / `moderation_status`), body, and references.
 - **Comments** — nested under their answer; question-level comments shown separately.
 
+## Escalation / Approval workflow
+
+The detail view has a **"Seek Approval"** tab (`commentTab === 'seek_approval'`)
+beside the normal "Write" / "Preview" answer composer tabs. When the admin
+clicks it, a picker appears to select another admin as the escalation target:
+
+1. **Select authority** — dropdown listing all admins (fetched via `fetchUsers({ role: 'ADMIN' })`).
+2. **Submit** → `adminSeekApproval(queryId, adminId, adminName)` →
+   `POST /api/admin/questions/:id/seek-approval`.
+
+Backend sets `question.approval_status = 'pending'` and creates an `Approval` record.
+The question then shows an orange **"Approval pending"** banner with the target
+admin's name. A second admin who receives it calls
+`adminMarkApprovalReceived(queryId)` → `POST /api/admin/questions/:id/approve-request`,
+updating `Approval.status = 'approved'`. The banner turns green.
+
+If the acting admin is the target (same person), they can directly "Mark Approval
+Received" via a button in the answer composer area without going through the seek step.
+
+```ts
+adminSeekApproval(queryId, adminId, adminName)  → POST /api/admin/questions/:id/seek-approval
+adminMarkApprovalReceived(queryId)              → POST /api/admin/questions/:id/approve-request
+```
+
+Both require `ADMIN` role. Errors surface as `notifyError` toasts.
+
 ## Admin response (comment + resolve)
 
 A composer lets the admin post an authoritative reply that **resolves the question
@@ -49,6 +75,10 @@ Backend (`adminCommentAndResolve` in [`admin.controller.js`](../../../../../back
 The reply renders as **"ADMIN"** in the thread — `getQuestionById` maps any
 `author_role === 'ADMIN'` to the name `ADMIN`, so the individual admin's identity
 is never shown, no matter who posts.
+
+> The "Mark Approval Received" button appears below the answer composer when
+> `q.approval_status === 'pending'` and the acting admin matches the
+> `approval_requested_from` (self-approval shortcut).
 
 ## Anonymous indication
 

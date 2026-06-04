@@ -46,11 +46,27 @@ Page resets to 1 on a new term.
 Each card surfaces as much as the model exposes:
 
 - **Badges:** short `#id`, `kind` (community/faq), `status`, non-approved
-  `moderation_status`, `is_pinned`, `is_locked`, `has_expert_answer`, `spark_bounty`
+  `moderation_status`, `is_pinned`, `is_locked`, `has_expert_answer`, `spark_bounty`,
+  **approval status** (`approval_status = 'pending'` → orange "Approval pending" banner;
+  `approval_status = 'approved'` → green "Approval received" banner)
 - **Content:** `title` + a 2-line preview (`body_plain`, falling back to stripped `body`)
 - **Tags:** `tags` chips
 - **Meta/stats:** author (`author_name`, or *Anonymous*), `upvotes`, `answer_count`,
   `view_count`, `assigned_to`, `created_at`, and `last_activity_at` when it differs
+
+## Filters
+
+| Filter | Param | Values | Description |
+|--------|-------|--------|-------------|
+| Status | `filterStatus` | `open` \| `unanswered` \| `in_progress` \| `closed` \| `resolved` | Question status |
+| Kind | `filterKind` | `community` \| `faq` | Question kind |
+| ID | `debouncedFilterId` | string | Exact question ID match |
+| Expert | `filterExpert` | `true` \| `false` | `has_expert_answer` flag |
+| Approval | `filterApproval` | `true` (pending) \| `approved` \| `false` (not pending) | `approval_status` filter |
+
+The Approval filter drives the "Approval Pending" / "Approval Received" / "Any Approval"
+select. Selecting `true` sets `hasApproval=true` which maps to `approval_status=pending`
+in the `listQuestions` backend; `approved` maps directly; `false` excludes pending.
 
 ## States
 

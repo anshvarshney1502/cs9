@@ -40,6 +40,8 @@ erDiagram
     USER     ||--o{ APPROVAL : "requested_by"
     QUESTION ||--o{ QUESTION_ASSIGNMENT_LOG : "question_id"
     USER ||--o{ QUESTION_ASSIGNMENT_LOG : "resolver_id"
+    QUESTION ||--o{ QUESTION_VIEW : "question_id"
+    USER ||--o{ QUESTION_VIEW : "user_id"
 
     APPROVAL {
         string approval_id PK
@@ -260,6 +262,30 @@ erDiagram
         date   assigned_at
         date   expires_at
     }
+
+    QUESTION_VIEW {
+        string question_id FK
+        string user_id FK
+        date   viewed_at
+    }
+
+    TAG {
+        string name PK "unique, trimmed"
+        string displayName
+        string description
+        number questionCount
+        date   created_at
+    }
+
+    PLATFORM_SETTINGS {
+        string settings_id PK "fixed: 'platform'"
+        object leaderboard "weights for each score component"
+        object userThresholds "resolver eligibility + moderation thresholds"
+        object questionEscalation "unresolvedHoursToEscalate, automaticEscalationEnabled, etc."
+        string updated_by "user_id"
+        date   created_at
+        date   updated_at
+    }
 ```
 
 ## Notes on relationships
@@ -273,6 +299,9 @@ erDiagram
 | Question self-reference | `linked_faq_id` → an FAQ a community question was promoted to / duplicates |
 | Vote / Flag | polymorphic (`target_type` + `target_id`) → question \| answer \| comment |
 | Approval | admin escalation: `requested_by` → `requested_from` for a question; tracks approval status |
+| Question ↔ QuestionView | unique per-pair — one record per user viewing a question; source of unique view counting |
+| Tag | FAQ/question taxonomy; `questionCount` is a denormalized cache |
+| Platform settings | singleton (`settings_id = 'platform'`); per-feature weighted thresholds and escalation config |
 | Assignment log | resolver auto-assignment audit trail (cron-driven for unanswered questions) |
 
 ## Scoring fields (see `LEADERBOARD.md`)
@@ -294,4 +323,5 @@ erDiagram
 | `answers.comment_count/top_level_comment_count` | visible `comments.answer_id` count | comment lifecycle/moderation; `rebuild-comment-counters.js` |
 | `comments.reply_count` | visible `comments.parent_id` count | comment lifecycle/moderation; `rebuild-comment-counters.js` |
 | `questions.approval_status` | `Approval` collection status | `adminSeekApproval` / `adminMarkApprovalReceived` controllers |
-| `questions.approval_status` | `Approval` collection status | `adminSeekApproval` / `adminMarkApprovalReceived` controllers |
+| `tags.questionCount` | visible `questions.tag` matches | tag lifecycle on question create/delete |
+| `question_views` | unique (question_id, user_id) pairs | view-increment checks existing pair before upserting |

@@ -83,6 +83,8 @@ backend/
 │   │
 │   ├── services/
 │   │   ├── content.service.js
+│   │   ├── dashboard-events.service.js  ← SSE real-time event push
+│   │   ├── domain-events.service.js     ← shared event bus (used by dashboard + notifications)
 │   │   ├── question-allocation.service.js
 │   │   ├── role.service.js
 │   │   └── spark.service.js

@@ -120,6 +120,10 @@ The `hasApproval` filter on `GET /api/admin/questions` surfaces pending/approved
   status + action: hide/delete content, warn/suspend author). `services/content.service.js`
   applies content actions.
 - **Notifications** — created on answers, role changes, flag resolutions, warnings, etc.
+- **Dashboard real-time events** — `GET /api/dashboard/events` is a Server-Sent Events
+  (SSE) endpoint (`dashboard.routes.js` → `dashboard-events.service.js`) that pushes
+  `new_question` events to subscribed admin clients. Clients subscribe to either all
+  questions or only their own (`?my=1`).
 - **Question auto-assignment** — `scheduled/question-assignment.js` cron +
   `services/question-allocation.service.js` (assigns unanswered questions to resolvers;
   see [FEATURE.md](./FEATURE.md)).
@@ -127,7 +131,7 @@ The `hasApproval` filter on `GET /api/admin/questions` surfaces pending/approved
 ### API surface (mounted in `app.js`)
 `/api/auth` · `/api/users` · `/api/profile` · `/api/questions` · `/api/answers` ·
 `/api/comments` · `/api/admin` · `/api/flags` · `/api/notifications` · `/api/sparks` ·
-`/api/leaderboard` · `/api/resolver` · `/api/moderation` · `/api/docs` (Swagger).
+`/api/leaderboard` · `/api/resolver` · `/api/moderation` · `/api/dashboard/events` (SSE) · `/api/docs` (Swagger).
 
 ---
 
