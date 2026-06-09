@@ -967,21 +967,6 @@ Recent commits indicate a PR-based workflow and scoped feature/fix commits:
 | `ee0d8674` | `feat(admin): escalation workflow, dashboard approval card, SLA & community charts (#113)` |
 | `0cdbbc43` | `feat: implement query attachments preview and download for student and admin dashboards (#105)` |
 
-Contribution names listed in the root README:
-
-| Team Member | Contribution |
-|---|---|
-| Samyabrata Roy | Not clearly identifiable from the current codebase. |
-| Nandini | Not clearly identifiable from the current codebase. |
-| SAMAD MOHAMMED | Not clearly identifiable from the current codebase. |
-| Ansh Varshney | Not clearly identifiable from the current codebase. |
-| Kashish Panwar | Not clearly identifiable from the current codebase. |
-| Shreya Choudhary | Not clearly identifiable from the current codebase. |
-| Rahul Prasad | Not clearly identifiable from the current codebase. |
-| Abhi Sriya | Not clearly identifiable from the current codebase. |
-| Adhin Mahesh | Not clearly identifiable from the current codebase. |
-| Udarsh Goyal | Not clearly identifiable from the current codebase. |
-
 The repository includes `.github/PULL_REQUEST_TEMPLATE.md` and `CONTRIBUTING.md`, both requiring summaries, scope, testing notes, reviewer notes, screenshots for UI changes, and checklist items such as checking for secrets.
 
 ### 14. Challenges Faced
@@ -1038,7 +1023,7 @@ The following challenges are inferred from implemented code, comments, tests, an
 | Add email notifications | Notifications are currently in-app only. |
 | Store large attachments externally | Question attachments are embedded in MongoDB documents with explicit size guards. |
 
-### 17. Screenshots Placeholder
+<!-- ### 17. Screenshots Placeholder
 
 Add screenshots later under `docs/screenshots/`.
 
@@ -1068,9 +1053,9 @@ Add screenshots later under `docs/screenshots/`.
 ![Admin Flag Moderation](./docs/screenshots/admin-flag-moderation.png)
 ```
 
-Note: a frontend register page was not found, so the register screenshot placeholder should either be filled after implementing that page or omitted from final submission.
+Note: a frontend register page was not found, so the register screenshot placeholder should either be filled after implementing that page or omitted from final submission. -->
 
-### 18. Conclusion
+### 17. Conclusion
 
 The repository successfully implements a full-stack FAQ and community question-resolution portal with a React/Vite frontend, Express/Mongoose backend, MongoDB data models, cookie-based authentication, role-based authorization, moderation, notifications, spark/reputation scoring, admin dashboards, and FAQ curation/export.
 
