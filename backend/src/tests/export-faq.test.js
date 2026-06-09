@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import Question from '../models/question.model.js'
+import Answer from '../models/answer.model.js'
 import FAQQuestion from '../models/faq.model.js'
 import { exportQuestionToFAQ } from '../controllers/admin.controller.js'
 
@@ -56,44 +57,59 @@ test('exportQuestionToFAQ fails if original question is not found', async (t) =>
   assert.match(captured?.message, /Original question not found/)
 })
 
-test('exportQuestionToFAQ rejects unresolved questions', async (t) => {
+test('exportQuestionToFAQ rejects an already promoted query', async (t) => {
+  t.mock.method(Question, 'findOne', async () => ({
+    question_id: 'q1',
+    title: 'Original Question Title',
+    linked_faq_id: 'faq-existing-id',
+  }))
+  let captured
+  const res = makeRes()
+  await exportQuestionToFAQ(
+    makeReq({
+      body: { curatedTitle: 'This is a long curated title', curatedBody: 'Curated body' },
+    }),
+    res,
+    (e) => { captured = e },
+  )
+  assert.equal(captured?.statusCode, 409)
+  assert.match(captured?.message, /already been promoted/)
+})
+
+test('exportQuestionToFAQ uses the selected answer when body is not provided', async (t) => {
   t.mock.method(Question, 'findOne', async () => ({
     question_id: 'q1',
     title: 'Original Question Title',
     status: 'open',
-    approval_status: 'approved',
-  }))
-  let captured
-  const res = makeRes()
-  await exportQuestionToFAQ(
-    makeReq({
-      body: { curatedTitle: 'This is a long curated title', curatedBody: 'Curated body' },
-    }),
-    res,
-    (e) => { captured = e },
-  )
-  assert.equal(captured?.statusCode, 400)
-  assert.match(captured?.message, /Only resolved questions can be exported/)
-})
-
-test('exportQuestionToFAQ rejects unapproved questions', async (t) => {
-  t.mock.method(Question, 'findOne', async () => ({
-    question_id: 'q1',
-    title: 'Original Question Title',
-    status: 'closed',
     approval_status: 'pending',
   }))
-  let captured
+  t.mock.method(Answer, 'findOne', async () => ({
+    answer_id: 'a1',
+    question_id: 'q1',
+    body: 'Selected answer body text that is long enough',
+  }))
+  t.mock.method(FAQQuestion, 'exists', async () => false)
+  const faqCreate = t.mock.method(FAQQuestion, 'create', async (data) => ({
+    question_id: 'faq-new-id',
+    ...data,
+  }))
+  t.mock.method(Question, 'updateOne', async () => ({ modifiedCount: 1 }))
+
   const res = makeRes()
   await exportQuestionToFAQ(
     makeReq({
-      body: { curatedTitle: 'This is a long curated title', curatedBody: 'Curated body' },
+      body: {
+        curatedTitle: 'This is a long curated title',
+        answerId: 'a1',
+        tags: ['Timing & Dates'],
+      },
     }),
     res,
-    (e) => { captured = e },
+    (e) => { throw e },
   )
-  assert.equal(captured?.statusCode, 400)
-  assert.match(captured?.message, /not been approved for FAQ export/)
+
+  assert.equal(res.statusCode, 201)
+  assert.equal(faqCreate.mock.calls[0].arguments[0].body, 'Selected answer body text that is long enough')
 })
 
 test('exportQuestionToFAQ successfully exports and updates original question', async (t) => {

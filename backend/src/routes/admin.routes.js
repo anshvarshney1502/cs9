@@ -52,7 +52,7 @@ router.post('/questions/:questionId/resolve', adminCommentAndResolve)
 router.post('/questions/:questionId/seek-approval', adminSeekApproval)
 router.post('/questions/:questionId/approve-request', adminMarkApprovalReceived)
 
-// Admin exports a resolved question to the FAQ database after curation
+// Admin promotes a query to the FAQ database after curation
 router.post('/questions/:questionId/export-faq', exportQuestionToFAQ)
 
 export default router

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import {
   ArrowLeft, Tag, Pin, Lock, CheckCircle, Zap, ChevronUp, MessageSquare,
-  User, Clock, Loader, ShieldCheck, VenetianMask, Eye, Award, Trash2, AlertTriangle, Send, RotateCcw,
+  User, Clock, Loader, ShieldCheck, VenetianMask, Eye, Award, Trash2, AlertTriangle, Send, RotateCcw, X,
 } from 'lucide-react'
 import { fetchQuestionDetail, unacceptAnswer } from '../../../user/service'
 import { adminResolveQuery, adminSeekApproval, adminMarkApprovalReceived, exportToFAQ, fetchTags, fetchUsers } from '../../service'
@@ -86,6 +86,52 @@ function formatDateTime(value) {
 
 function Badge({ className, children }) {
   return <span className={`rounded px-2 py-0.5 text-[10px] font-bold uppercase ${className}`}>{children}</span>
+}
+
+function plainText(value = '') {
+  return String(value)
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+function truncateText(value, maxLength = 80) {
+  if (!value || value.length <= maxLength) return value
+  return `${value.slice(0, maxLength - 1).trim()}...`
+}
+
+function splitTags(value = '') {
+  return value
+    .split(',')
+    .map((tag) => tag.trim())
+    .filter(Boolean)
+}
+
+function tagDisplayName(tag) {
+  if (typeof tag === 'string') return tag
+  return tag?.displayName || tag?.name || ''
+}
+
+function answerOptionLabel(answer, index) {
+  const badges = []
+  if (answer.is_accepted) badges.push('accepted')
+  if (answer.is_expert) badges.push('expert')
+  if (answer.is_official) badges.push('official')
+
+  const badgeText = badges.length ? ` (${badges.join(', ')})` : ''
+  const author = answer.author_name || 'User'
+  const preview = truncateText(plainText(answer.body), 90) || 'Empty answer'
+
+  return `Answer ${index + 1}${badgeText} - ${author} - ${preview}`
+}
+
+function getPromotableAnswers(answers = []) {
+  return answers.filter((answer) => (
+    answer?.answer_id
+    && answer.body?.trim()
+    && !answer.is_deleted
+    && answer.visibility !== 'deleted'
+  ))
 }
 
 // Real moderation state from the raw fields (admin always receives bodies, so we
@@ -200,7 +246,7 @@ function AdminQueryDetailView({ queryId, onBack }) {
   const [selectedAdmin, setSelectedAdmin] = useState('')
 
   const [showExportModal, setShowExportModal] = useState(false)
-  const [exportForm, setExportForm] = useState({ title: '', body: '', tags: '' })
+  const [exportForm, setExportForm] = useState({ title: '', body: '', tags: '', answerId: '' })
   const [exporting, setExporting] = useState(false)
   const [availableTags, setAvailableTags] = useState([])
   const [answerTab, setAnswerTab] = useState('write') // 'write' | 'preview'
@@ -258,10 +304,7 @@ function AdminQueryDetailView({ queryId, onBack }) {
   }
 
   const handleToggleSuggestion = (tag) => {
-    const currentTags = exportForm.tags
-      .split(',')
-      .map((t) => t.trim())
-      .filter(Boolean)
+    const currentTags = splitTags(exportForm.tags)
 
     const index = currentTags.findIndex((t) => t.toLowerCase() === tag.toLowerCase())
     if (index > -1) {
@@ -269,6 +312,25 @@ function AdminQueryDetailView({ queryId, onBack }) {
     } else {
       currentTags.push(tag)
     }
+
+    setExportForm((f) => ({ ...f, tags: currentTags.join(', ') }))
+  }
+
+  const handleAddExportTag = (tag) => {
+    const trimmedTag = tag.trim()
+    if (!trimmedTag) return
+
+    const currentTags = splitTags(exportForm.tags)
+    if (!currentTags.some((currentTag) => currentTag.toLowerCase() === trimmedTag.toLowerCase())) {
+      currentTags.push(trimmedTag)
+    }
+
+    setExportForm((f) => ({ ...f, tags: currentTags.join(', ') }))
+  }
+
+  const handleRemoveExportTag = (tag) => {
+    const currentTags = splitTags(exportForm.tags)
+      .filter((currentTag) => currentTag.toLowerCase() !== tag.toLowerCase())
 
     setExportForm((f) => ({ ...f, tags: currentTags.join(', ') }))
   }
@@ -355,36 +417,78 @@ function AdminQueryDetailView({ queryId, onBack }) {
     }
   }
 
-  const acceptedAnswer = data?.answers?.find(a => a.is_accepted) || data?.answers?.find(a => a.is_expert || a.is_official) || data?.answers?.[0]
-  const canExport = isAdmin && data?.question && data.question.status === 'closed' && acceptedAnswer && !data.question.linked_faq_id
+  const promotionAnswers = getPromotableAnswers(data?.answers || [])
+  const selectedExportTags = splitTags(exportForm.tags)
+  const selectableExportTags = [...new Set(availableTags.map(tagDisplayName).filter(Boolean))]
+    .filter((tag) => !selectedExportTags.some((selectedTag) => selectedTag.toLowerCase() === tag.toLowerCase()))
+  const suggestedExportTags = getSuggestedTags()
+  const canPromote = isAdmin && data?.question && data.question.kind !== 'faq' && !data.question.linked_faq_id
 
   const handleOpenExport = () => {
     if (!data?.question) return
+    const answersForPromotion = getPromotableAnswers(data.answers || [])
+    const selectedAnswer = answersForPromotion.find(a => a.is_accepted) || answersForPromotion.find(a => a.is_expert || a.is_official) || answersForPromotion[0]
+
+    if (!selectedAnswer) {
+      notifyError('Add at least one answer before promoting this query to FAQ.')
+      return
+    }
+
     setExportForm({
       title: data.question.title || '',
-      body: acceptedAnswer ? acceptedAnswer.body : '',
+      body: selectedAnswer.body || '',
       tags: data.question.tags ? data.question.tags.join(', ') : '',
+      answerId: selectedAnswer.answer_id || '',
     })
     setAnswerTab('write')
     setShowExportModal(true)
   }
 
+  const handleSelectExportAnswer = (answerId) => {
+    const selectedAnswer = promotionAnswers.find((answer) => answer.answer_id === answerId)
+    setExportForm((f) => ({
+      ...f,
+      answerId,
+      body: selectedAnswer?.body || '',
+    }))
+    setAnswerTab('write')
+  }
+
   async function handleExportSubmit(e) {
     e.preventDefault()
-    if (!exportForm.title.trim() || !exportForm.body.trim() || exporting) return
+    const tags = splitTags(exportForm.tags)
+    if (exporting) return
+    if (!exportForm.title.trim()) {
+      notifyError('FAQ question is required.')
+      return
+    }
+    if (!exportForm.answerId) {
+      notifyError('Select an answer to promote.')
+      return
+    }
+    if (!exportForm.body.trim()) {
+      notifyError('FAQ answer is required.')
+      return
+    }
+    if (!tags.length) {
+      notifyError('Select at least one tag for the FAQ.')
+      return
+    }
+
     setExporting(true)
     try {
       const payload = {
         curatedTitle: exportForm.title.trim(),
         curatedBody: exportForm.body.trim(),
-        tags: exportForm.tags.split(',').map(t => t.trim()).filter(Boolean),
+        answerId: exportForm.answerId,
+        tags,
       }
       await exportToFAQ(queryId, payload)
-      notifySuccess('Query successfully exported to FAQ.')
+      notifySuccess('Query successfully promoted to FAQ.')
       setShowExportModal(false)
       await load()
     } catch (err) {
-      notifyError(err?.response?.data?.message || 'Could not export to FAQ.')
+      notifyError(err?.response?.data?.message || 'Could not promote to FAQ.')
     } finally {
       setExporting(false)
     }
@@ -449,18 +553,20 @@ function AdminQueryDetailView({ queryId, onBack }) {
       <div className="mb-5 flex flex-wrap items-center justify-between gap-4">
         {BackButton}
         <div className="flex items-center gap-2">
-          {canExport && (
+          {canPromote && (
             <button
               type="button"
               onClick={handleOpenExport}
-              className="flex items-center gap-1.5 rounded-lg bg-brand px-4 py-2 text-[12px] font-semibold text-white transition hover:bg-brand/90"
+              disabled={promotionAnswers.length === 0}
+              title={promotionAnswers.length === 0 ? 'Add at least one answer before promoting this query.' : undefined}
+              className="flex items-center gap-1.5 rounded-lg bg-brand px-4 py-2 text-[12px] font-semibold text-white transition hover:bg-brand/90 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              Export to FAQ
+              Promote to FAQ
             </button>
           )}
           {q.linked_faq_id && (
             <span className="inline-flex items-center gap-1.5 rounded-lg bg-purple-50 px-3 py-1.5 text-[11px] font-semibold text-purple-700">
-              Exported to FAQ
+              Promoted to FAQ
             </span>
           )}
         </div>
@@ -696,17 +802,17 @@ function AdminQueryDetailView({ queryId, onBack }) {
         )}
       </div>
 
-      {/* Export to FAQ Curation Modal */}
-      <Modal isOpen={showExportModal} onClose={() => setShowExportModal(false)} title="Export to FAQ" panelClassName="!max-w-xl !rounded-xl !p-0 overflow-hidden">
+      {/* Promote to FAQ Curation Modal */}
+      <Modal isOpen={showExportModal} onClose={() => setShowExportModal(false)} title="Promote to FAQ" panelClassName="!max-w-2xl !rounded-xl !p-0 overflow-hidden">
         <form onSubmit={handleExportSubmit}>
           <div className="border-b border-border-light px-8 pb-6 pt-8">
-            <h2 className="font-display text-[26px] font-bold leading-tight text-text-primary">Export to FAQ</h2>
-            <p className="mt-1 text-[13px] text-text-secondary">Curate and refine this community query to be published in the official FAQ database.</p>
+            <h2 className="font-display text-[26px] font-bold leading-tight text-text-primary">Promote to FAQ</h2>
+            <p className="mt-1 text-[13px] text-text-secondary">Curate this query into a public FAQ entry without changing the original query.</p>
           </div>
 
           <div className="space-y-5 px-8 py-7">
             <div className="group">
-              <label className="mb-2 block text-[11px] font-bold uppercase tracking-[0.08em] text-text-muted transition-colors group-focus-within:text-text-primary animate-colors">CURATED QUESTION</label>
+              <label className="mb-2 block text-[11px] font-bold uppercase tracking-[0.08em] text-text-muted transition-colors group-focus-within:text-text-primary animate-colors">FAQ QUESTION</label>
               <input
                 className="w-full rounded-lg border border-border bg-bg-primary px-4 py-2.5 text-[13px] text-text-primary placeholder:text-text-muted outline-none transition focus:border-text-primary focus:ring-1 focus:ring-text-primary"
                 value={exportForm.title}
@@ -716,9 +822,25 @@ function AdminQueryDetailView({ queryId, onBack }) {
               />
             </div>
             <div className="group">
+              <label className="mb-2 block text-[11px] font-bold uppercase tracking-[0.08em] text-text-muted transition-colors group-focus-within:text-text-primary animate-colors">SELECT ANSWER</label>
+              <select
+                className="w-full rounded-lg border border-border bg-bg-primary px-4 py-2.5 text-[13px] text-text-primary outline-none transition focus:border-text-primary focus:ring-1 focus:ring-text-primary"
+                value={exportForm.answerId}
+                onChange={(e) => handleSelectExportAnswer(e.target.value)}
+                required
+              >
+                <option value="">Select an answer...</option>
+                {promotionAnswers.map((answer, index) => (
+                  <option key={answer.answer_id} value={answer.answer_id}>
+                    {answerOptionLabel(answer, index)}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="group">
               <div className="mb-2 flex items-center justify-between">
                 <label className="block text-[11px] font-bold uppercase tracking-[0.08em] text-text-muted transition-colors group-focus-within:text-text-primary animate-colors">
-                  CURATED ANSWER
+                  FAQ ANSWER
                 </label>
                 <div className="flex border border-border-light rounded-lg overflow-hidden p-0.5 bg-bg-primary">
                   <button
@@ -764,8 +886,18 @@ function AdminQueryDetailView({ queryId, onBack }) {
             </div>
             <div className="group">
               <label className="mb-2 block text-[11px] font-bold uppercase tracking-[0.08em] text-text-muted transition-colors group-focus-within:text-text-primary animate-colors">
-                TAGS <span className="ml-0.5 text-[10px] font-medium normal-case tracking-normal text-text-muted">(comma-separated)</span>
+                TAGS
               </label>
+              <select
+                className="mb-2 w-full rounded-lg border border-border bg-bg-primary px-4 py-2.5 text-[13px] text-text-primary outline-none transition focus:border-text-primary focus:ring-1 focus:ring-text-primary"
+                value=""
+                onChange={(e) => handleAddExportTag(e.target.value)}
+              >
+                <option value="">Add a saved tag...</option>
+                {selectableExportTags.map((tag) => (
+                  <option key={tag} value={tag}>{tag}</option>
+                ))}
+              </select>
               <div className="relative flex items-center">
                 <Tag className="pointer-events-none absolute left-3 h-4 w-4 text-text-muted" strokeWidth={1.8} />
                 <input
@@ -775,17 +907,30 @@ function AdminQueryDetailView({ queryId, onBack }) {
                   placeholder="internship, onboarding, reports"
                 />
               </div>
+              {selectedExportTags.length > 0 && (
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  {selectedExportTags.map((tag) => (
+                    <button
+                      key={tag}
+                      type="button"
+                      onClick={() => handleRemoveExportTag(tag)}
+                      className="flex items-center gap-1 rounded border border-brand/30 bg-brand/10 px-2 py-0.5 text-[10px] font-semibold text-brand transition hover:bg-brand/20"
+                    >
+                      {tag}
+                      <X className="h-3 w-3" strokeWidth={2} />
+                    </button>
+                  ))}
+                </div>
+              )}
 
               {/* Tag suggestions */}
-              {getSuggestedTags().length > 0 && (
+              {suggestedExportTags.length > 0 && (
                 <div className="mt-3">
                   <span className="text-[10px] font-bold text-text-muted uppercase tracking-wider block mb-1.5">Suggested Tags (Click to toggle):</span>
                   <div className="flex flex-wrap gap-1.5">
-                    {getSuggestedTags().map((tag) => {
-                      const isSelected = exportForm.tags
-                        .split(',')
-                        .map((t) => t.trim().toLowerCase())
-                        .includes(tag.toLowerCase())
+                    {suggestedExportTags.map((tag) => {
+                      const isSelected = selectedExportTags
+                        .some((selectedTag) => selectedTag.toLowerCase() === tag.toLowerCase())
                       return (
                         <button
                           key={tag}
@@ -821,7 +966,7 @@ function AdminQueryDetailView({ queryId, onBack }) {
               disabled={exporting}
               className="rounded-lg bg-black px-8 py-2.5 text-[14px] font-semibold text-white shadow-lg shadow-black/10 transition hover:bg-[#2e3132] disabled:opacity-50"
             >
-              {exporting ? 'Exporting…' : 'Publish as FAQ'}
+              {exporting ? 'Promoting...' : 'Publish as FAQ'}
             </button>
           </div>
         </form>

@@ -826,7 +826,7 @@ export async function adminMarkApprovalReceived(req, res, next) {
 export async function exportQuestionToFAQ(req, res, next) {
   try {
     const { questionId } = req.params
-    const { curatedTitle, curatedBody, tags } = req.body
+    const { curatedTitle, curatedBody, tags, answerId } = req.body
 
     if (!curatedTitle || typeof curatedTitle !== 'string' || !curatedTitle.trim()) {
       throw createHttpError(400, 'Curated title is required')
@@ -839,23 +839,44 @@ export async function exportQuestionToFAQ(req, res, next) {
       throw createHttpError(400, 'Title must be at most 300 characters long')
     }
 
-    if (!curatedBody || typeof curatedBody !== 'string' || !curatedBody.trim()) {
-      throw createHttpError(400, 'Curated body is required')
-    }
-
     // Retrieve the original community question by question_id
     const question = await Question.findOne({ question_id: questionId })
     if (!question) {
       throw createHttpError(404, 'Original question not found')
     }
 
-    // Guard: only resolved questions with explicit approval can become FAQs
-    if (question.status !== 'closed') {
-      throw createHttpError(400, 'Only resolved questions can be exported to FAQ')
+    if (question.kind === 'faq') {
+      throw createHttpError(400, 'FAQ entries cannot be promoted again')
     }
-    if (question.approval_status !== 'approved') {
-      throw createHttpError(400, 'This question has not been approved for FAQ export')
+    if (question.linked_faq_id) {
+      throw createHttpError(409, 'This query has already been promoted to FAQ')
     }
+
+    let selectedAnswer = null
+    if (answerId) {
+      selectedAnswer = await Answer.findOne({
+        answer_id: answerId,
+        question_id: question.question_id,
+        is_deleted: { $ne: true },
+        visibility: { $ne: 'deleted' },
+      })
+
+      if (!selectedAnswer) {
+        throw createHttpError(400, 'Selected answer was not found for this query')
+      }
+    }
+
+    const trimmedBody = typeof curatedBody === 'string' && curatedBody.trim()
+      ? curatedBody.trim()
+      : selectedAnswer?.body?.trim()
+
+    if (!trimmedBody) {
+      throw createHttpError(400, 'Curated body is required')
+    }
+
+    const normalizedTags = Array.isArray(tags)
+      ? tags.map((tag) => String(tag).trim()).filter(Boolean)
+      : (typeof tags === 'string' ? tags.split(',').map((tag) => tag.trim()).filter(Boolean) : [])
 
     // Generate unique slug
     let baseSlug = trimmedTitle
@@ -874,8 +895,8 @@ export async function exportQuestionToFAQ(req, res, next) {
     // Create the new FAQ Question
     const faqQuestion = await FAQQuestion.create({
       title: trimmedTitle,
-      body: curatedBody.trim(),
-      tags: Array.isArray(tags) ? tags : [tags].filter(Boolean),
+      body: trimmedBody,
+      tags: normalizedTags,
       slug,
       kind: 'faq',
       status: 'published',
